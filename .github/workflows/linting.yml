@@ -1,0 +1,55 @@
+name: linting check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: write
+  security-events: write
+  packages: read
+  actions: read
+
+jobs:
+  build:
+    timeout-minutes: 180
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04]
+        python-version: [3.8, 3.9]
+
+    steps:
+      - name: Action checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Installing package
+        run: |
+          python -m pip install -e .[dev]
+
+      - name: Run Ruff
+        uses: chartboost/ruff-action@v1
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+
+      - name: Component detection
+        uses: advanced-security/component-detection-dependency-submission-action@v0.0.2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
