@@ -23,6 +23,7 @@ setup(
         "wandb==0.16.2",
         "ray==2.9.2",
         "pydantic-settings==2.1.0",
+        "starlette==0.40.0",
         "ray[serve]",
     ],
     extras_require={
