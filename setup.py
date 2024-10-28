@@ -11,7 +11,7 @@ setup(
         "protobuf==4.23.1",
         "ruamel.yaml==0.17.21",
         "fire==0.5.0",
-        "scipy==1.23.5",
+        "scipy==1.10.1",
         "joblib==1.3.2",
         "pydantic==2.6.1",
         "python-dotenv==1.0.1",
