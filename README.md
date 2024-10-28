@@ -1,6 +1,15 @@
 # MarS: A Financial Market Simulation Engine Powered by Generative Foundation Model
 
-## Introduction
+![build](https://img.shields.io/badge/build-pass-green)
+![MIT](https://img.shields.io/badge/license-MIT-blue)
+
+<h3 align="center">
+    <img src="doc/img/MarS_homepage.gif" alt="MarS homepage" style="width: 100%; ">
+
+<a href="https://arxiv.org/abs/2409.07486" target="_blank">📄 Paper</a> + <a href="https://mars-lmm.github.io/" target="_blank">🏠️ Project Website</a>
+</h3>
+
+## 📚 Introduction
 
 MarS is a cutting-edge financial market simulation engine powered by the Large Market Model (LMM), a generative foundation model. MarS addresses the need for realistic, interactive, and controllable order generation. This paper's primary goals are to evaluate the LMM's scaling law in financial markets, assess MarS’s realism, balance controlled generation with market impact, and demonstrate MarS’s potential applications.
 
@@ -8,14 +17,14 @@ Below is a high-level overview diagram illustrating the core components, workflo
 
 <img src="doc/img/high-level-overview.png" alt="High-Level Overview of MarS" />
 
-### Main Contributions
+### 🎯 Main Contributions
 - We take the first step toward building a generative foundation model as a world model for financial market and verify the scaling law of the Large Market Model. It demonstrates the huge potential of this new direction of domain-specific foundation models.
 - We design a realistic Market Simulation based on the LMM to fulfill two key requirements: generating target scenarios and modeling order market impacts, thereby unlocking LMM’s potential for meaningful applications.
 - We showcase four types of downstream applications of MarS, demonstrating the significant potential of the MarS-based paradigm for the industry.
 
 For more detailed information, please refer to our [paper](https://arxiv.org/abs/2409.07486) and [website](https://mars-lmm.github.io/).
 
-## Current Release
+## 🚀 Current Release
 
 We are excited to release the MarS simulation engine along with examples demonstrating its capabilities for market simulation. This release includes:
 - [mlib](mlib): The core engine for generating and simulating financial market orders.
@@ -24,7 +33,7 @@ We are excited to release the MarS simulation engine along with examples demonst
 The release of the pretrained model is currently undergoing internal review. We will make the model public once it passes the review. We look forward to sharing more features, examples, and applications in the future. Stay tuned for updates!
 
 
-## Installation
+## 💻 Installation
 
 The code is tested with Python 3.8 & 3.9. Run the following command to install the necessary dependencies:
 
@@ -32,9 +41,9 @@ The code is tested with Python 3.8 & 3.9. Run the following command to install t
 pip install -e .[dev]
 ```
 
-## Market Simulatin Library
+## 📊 Market Simulatin Library
 
-**mlib** is a comprehensive library dedicated to market simulation, designed to be user-friendly, allowing users to focus on the design of states and agents.
+**🛠️ mlib** is a comprehensive library dedicated to market simulation, designed to be user-friendly, allowing users to focus on the design of states and agents.
 
 Behind the scenes, we automatically:
 
@@ -42,11 +51,11 @@ Behind the scenes, we automatically:
 - Update states with pertinent trade information.
 - Distribute states and actions considering network and computational latency.
 
-### Overall architecture
+### 🗂️ Overall architecture
 
 <img src="doc/img/mlib-flow.png" alt="mlib-architecture" />
 
-#### Env
+#### 🌍 Env
 
 Env is a [gym](https://www.gymlibrary.dev/)-like interface. Below is an example of how to generate orders using env and a noise agent:
 
@@ -66,7 +75,7 @@ for observation in env.env():
     env.step(action)
 ```
 
-#### States
+#### 🔄 States
 
 States are information available to agents, automatically updated with every trade information, including orders, transactions, and orderbook snapshots as defined in [trade_info.py](mlib/core/trade_info.py).
 
@@ -102,10 +111,9 @@ Once a new state is defined and registered with `exchange.register_state(state)`
 So far, we have defined the following states:
 
 - [trans_state](market_simulation/states/trans_state.py) contains all transactions.
-
 - [trade_info_state](market_simulation/states/trade_info_state.py) contains all trade information.
 
-#### Example: Run Simulation with Noise Agent
+#### 🕹️ Example: Run Simulation with Noise Agent
 
 You can run the [run_simulaton.py](market_simulation/examples/run_simulation.py) for a complete example to perform market simulation with a noise agent.
 
@@ -120,11 +128,11 @@ You can see the price trajectory generated from matching orders by the noise age
 Note: This example demonstrates the use of MarS to simulate a market with a noise agent. For realistic market simulations, a more comprehensive model, such as the Large Market Model (LMM) in MarS, is typically required.
 
 
-## Disclaimer
+## ⚠️ Disclaimer
 
 Users of the market simulation engine and the code should prepare their own agents which may be included trained models built with users’ own data, independently assess and test the risks of the model in a specify use scenario, ensure the responsible use of AI technology, including but limited to developing and integrating risk mitigation measures, and comply with all applicable laws and regulations. The market simulation engine does not provide financial opinions, nor is it designed to replace the role of qualified financial professionals in formulating, assessing, and approving finance products. The outputs of the market simulation engine do not reflect the opinions of Microsoft.
 
-## Contributing
+## 🤝 Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
@@ -138,10 +146,21 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
-## Trademarks
+## ™️ Trademarks
 
 This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
 trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
+
+## 📑 Citations
+
+```bibtex
+@article{li2024mars,
+  title={MarS: a Financial Market Simulation Engine Powered by Generative Foundation Model},
+  author={Li, Junjie and Liu, Yang and Liu, Weiqing and Fang, Shikai and Wang, Lewen and Xu, Chang and Bian, Jiang},
+  journal={arXiv preprint arXiv:2409.07486},
+  year={2024}
+}
+```
