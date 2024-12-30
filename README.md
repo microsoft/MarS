@@ -9,6 +9,14 @@
 <a href="https://arxiv.org/abs/2409.07486" target="_blank">📄 Paper</a> + <a href="https://mars-lmm.github.io/" target="_blank">🏠️ Project Website</a>
 </h3>
 
+## 📢 Announcements
+
+| **Event**                   | **Description**                                                                                              |
+|-----------------------------|-------------------------------------------------------------------------------------------------------------|
+| 🌟 First Release      | We are excited to announce our first release! Check out the repo and enjoy your journey.                  |
+| 🌐 Join Our Community   | Connect with us on 💬 [WeChat Group](doc/img/wechat_comm.jpg) and 👾 [Discord](https://discord.gg/jW8gKDDEqS) to share your feedback and insights! |
+
+
 ## 📚 Introduction
 
 MarS is a cutting-edge financial market simulation engine powered by the Large Market Model (LMM), a generative foundation model. MarS addresses the need for realistic, interactive, and controllable order generation. This paper's primary goals are to evaluate the LMM's scaling law in financial markets, assess MarS’s realism, balance controlled generation with market impact, and demonstrate MarS’s potential applications.
