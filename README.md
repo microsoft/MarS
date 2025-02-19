@@ -46,7 +46,7 @@ The release of the pretrained model is currently undergoing internal review. We 
 The code is tested with Python 3.8 & 3.9. Run the following command to install the necessary dependencies:
 
 ```bash
-pip install -e .[dev]
+pip install -e ".[dev]"
 ```
 
 ## 📊 Market Simulatin Library
