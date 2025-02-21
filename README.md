@@ -1,12 +1,20 @@
-# MarS: A Financial Market Simulation Engine Powered by Generative Foundation Model
 
-![build](https://img.shields.io/badge/build-pass-green)
-![MIT](https://img.shields.io/badge/license-MIT-blue)
 
 <h3 align="center">
     <img src="doc/img/MarS_logo.png" alt="MarS Logo" style="width: 70%;"><br>
     <a href="https://arxiv.org/abs/2409.07486" target="_blank">📄 Paper</a> + <a href="https://mars-lmm.github.io/" target="_blank">🏠️ Project Website</a>
 </h3>
+
+<p align="center">
+    <img src="https://img.shields.io/badge/build-pass-green" alt="build">
+    <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT">
+    <img src="https://img.shields.io/badge/version-1.0.0-blue" alt="version">
+    <img src="https://img.shields.io/badge/python-3.8%20|%203.9-blue" alt="python">
+    <img src="https://img.shields.io/badge/platform-linux%20-lightgrey" alt="platform">
+    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome">
+    <img src="https://img.shields.io/badge/docs-latest-brightgreen" alt="documentation">
+</p>
+
 
 ## 📢 Announcements
 
@@ -17,10 +25,13 @@
 | 🌟 First Release      | We are excited to announce our first release! Check out the repo and enjoy your journey.                  |
 
 
-## 📚 Introduction
+## 📖 Introduction
+<h3 align="left">
+    MarS: A Financial Market Simulation Engine Powered by Generative Foundation Model
+</h3>
 <img src="doc/img/MarS_homepage.gif" alt="MarS homepage" style="width: 100%; "><br>
 
-MarS is a cutting-edge financial market simulation engine powered by the Large Market Model (LMM), a generative foundation model. MarS addresses the need for realistic, interactive, and controllable order generation. This paper's primary goals are to evaluate the LMM's scaling law in financial markets, assess MarS’s realism, balance controlled generation with market impact, and demonstrate MarS’s potential applications.
+MarS is a cutting-edge financial market simulation engine powered by the Large Market Model (LMM), a generative foundation model. MarS addresses the need for realistic, interactive, and controllable order generation. This paper's primary goals are to evaluate the LMM's scaling law in financial markets, assess MarS's realism, balance controlled generation with market impact, and demonstrate MarS's potential applications.
 
 Below is a high-level overview diagram illustrating the core components, workflow, and potential applications of the MarS simulation engine:
 
@@ -28,7 +39,7 @@ Below is a high-level overview diagram illustrating the core components, workflo
 
 ### 🎯 Main Contributions
 - We take the first step toward building a generative foundation model as a world model for financial market and verify the scaling law of the Large Market Model. It demonstrates the huge potential of this new direction of domain-specific foundation models.
-- We design a realistic Market Simulation based on the LMM to fulfill two key requirements: generating target scenarios and modeling order market impacts, thereby unlocking LMM’s potential for meaningful applications.
+- We design a realistic Market Simulation based on the LMM to fulfill two key requirements: generating target scenarios and modeling order market impacts, thereby unlocking LMM's potential for meaningful applications.
 - We showcase four types of downstream applications of MarS, demonstrating the significant potential of the MarS-based paradigm for the industry.
 
 For more detailed information, please refer to our [paper](https://arxiv.org/abs/2409.07486) and [website](https://mars-lmm.github.io/).
