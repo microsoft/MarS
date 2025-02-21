@@ -4,20 +4,21 @@
 ![MIT](https://img.shields.io/badge/license-MIT-blue)
 
 <h3 align="center">
-    <img src="doc/img/MarS_homepage.gif" alt="MarS homepage" style="width: 100%; ">
-
-<a href="https://arxiv.org/abs/2409.07486" target="_blank">📄 Paper</a> + <a href="https://mars-lmm.github.io/" target="_blank">🏠️ Project Website</a>
+    <img src="doc/img/MarS_logo.png" alt="MarS Logo" style="width: 70%;"><br>
+    <a href="https://arxiv.org/abs/2409.07486" target="_blank">📄 Paper</a> + <a href="https://mars-lmm.github.io/" target="_blank">🏠️ Project Website</a>
 </h3>
 
 ## 📢 Announcements
 
 | **Event**                   | **Description**                                                                                              |
 |-----------------------------|-------------------------------------------------------------------------------------------------------------|
-| 🌟 First Release      | We are excited to announce our first release! Check out the repo and enjoy your journey.                  |
+| 🎈 ICLR 2025 Acceptance | We are thrilled to announce that our paper has been accepted to ICLR 2025! |
 | 🌐 Join Our Community   | Connect with us on 💬 [WeChat Group](doc/img/wechat_comm.jpg) and 👾 [Discord](https://discord.gg/jW8gKDDEqS) to share your feedback and insights! |
+| 🌟 First Release      | We are excited to announce our first release! Check out the repo and enjoy your journey.                  |
 
 
 ## 📚 Introduction
+<img src="doc/img/MarS_homepage.gif" alt="MarS homepage" style="width: 100%; "><br>
 
 MarS is a cutting-edge financial market simulation engine powered by the Large Market Model (LMM), a generative foundation model. MarS addresses the need for realistic, interactive, and controllable order generation. This paper's primary goals are to evaluate the LMM's scaling law in financial markets, assess MarS’s realism, balance controlled generation with market impact, and demonstrate MarS’s potential applications.
 
@@ -138,7 +139,7 @@ Note: This example demonstrates the use of MarS to simulate a market with a nois
 
 ## ⚠️ Disclaimer
 
-Users of the market simulation engine and the code should prepare their own agents which may be included trained models built with users’ own data, independently assess and test the risks of the model in a specify use scenario, ensure the responsible use of AI technology, including but limited to developing and integrating risk mitigation measures, and comply with all applicable laws and regulations. The market simulation engine does not provide financial opinions, nor is it designed to replace the role of qualified financial professionals in formulating, assessing, and approving finance products. The outputs of the market simulation engine do not reflect the opinions of Microsoft.
+Users of the market simulation engine and the code should prepare their own agents which may be included trained models built with users' own data, independently assess and test the risks of the model in a specify use scenario, ensure the responsible use of AI technology, including but limited to developing and integrating risk mitigation measures, and comply with all applicable laws and regulations. The market simulation engine does not provide financial opinions, nor is it designed to replace the role of qualified financial professionals in formulating, assessing, and approving finance products. The outputs of the market simulation engine do not reflect the opinions of Microsoft.
 
 ## 🤝 Contributing
 
