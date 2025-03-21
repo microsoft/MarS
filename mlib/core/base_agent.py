@@ -1,7 +1,7 @@
 # pyright: strict
 import logging
 import sys
-from random import shuffle
+from random import Random, shuffle
 from typing import Dict, List, Optional, Tuple
 
 from pandas import Timedelta, Timestamp
@@ -47,6 +47,19 @@ class BaseAgent:
         self.computation_delay = Timedelta(computation_delay, unit="second")
         self.states_update_time = Timestamp("2000-01-01")
 
+    def init_base_info(self, other: "BaseAgent") -> None:
+        """Copy base information from other agent."""
+        self.symbol_states = other.symbol_states
+        self.lob_orders = other.lob_orders
+        self.lob_price_orders = other.lob_price_orders
+        self.holdings = other.holdings
+        self.cash = other.cash
+        self.tradable_holdings = other.tradable_holdings
+        self.tradable_cash = other.tradable_cash
+        self.communication_delay = other.communication_delay
+        self.computation_delay = other.computation_delay
+        self.states_update_time = other.states_update_time
+
     def get_action(self, observation: Observation) -> Action:
         """Get action given observation.
 
@@ -82,7 +95,7 @@ class BaseAgent:
     def on_market_close(self, time: Timestamp) -> None:
         pass
 
-    def _init_holdings(self, symbols: List[str]):
+    def _init_holdings(self, symbols: List[str]) -> None:
         for symbol in symbols:
             self.lob_orders[symbol] = {}
             self.lob_price_orders[symbol] = {}
@@ -93,20 +106,20 @@ class BaseAgent:
         for order in orders:
             self._add_accepted_order(order)
 
-    def on_order_rejected(self, time: Timestamp, base_orders: List[BaseOrder]):
+    def on_order_rejected(self, time: Timestamp, base_orders: List[BaseOrder]) -> None:
         for base_order in base_orders:
             logging.info(f"order rejected: {base_order}: this is an invalid cancel order.")
 
-    def on_order_ignored(self, time: Timestamp, base_orders: List[BaseOrder]):
+    def on_order_ignored(self, time: Timestamp, base_orders: List[BaseOrder]) -> None:
         for base_order in base_orders:
             logging.info(f"order ignore: {base_order}, invalid time: {base_order.time}")
 
-    def on_states_update(self, time: Timestamp, symbol_states: Dict[str, Dict[str, State]]):
+    def on_states_update(self, time: Timestamp, symbol_states: Dict[str, Dict[str, State]]) -> None:
         """Before agent wakeup, this function will be called automatically by the env to update agent with the latest available states."""
         self.symbol_states = symbol_states
         self.states_update_time = time
 
-    def _add_accepted_order(self, order: LimitOrder):
+    def _add_accepted_order(self, order: LimitOrder) -> None:
         if order.is_cancel:
             return
         symbol = order.symbol
@@ -130,11 +143,7 @@ class BaseAgent:
                 continue
             assert buy_id in self.lob_orders[transaction.symbol]
             limit_order = self.lob_orders[transaction.symbol][buy_id]
-            trans_volume: int = (
-                transaction.volume
-                if transaction.order_matched_volume is None
-                else transaction.order_matched_volume[buy_id]
-            )
+            trans_volume: int = transaction.volume if transaction.order_matched_volume is None else transaction.order_matched_volume[buy_id]
             limit_order.decrease_volume(trans_volume)
             assert limit_order.volume >= 0
             if limit_order.volume == 0:
@@ -153,11 +162,7 @@ class BaseAgent:
                 continue
             assert sell_id in self.lob_orders[transaction.symbol]
             limit_order = self.lob_orders[transaction.symbol][sell_id]
-            trans_volume = (
-                transaction.volume
-                if transaction.order_matched_volume is None
-                else transaction.order_matched_volume[sell_id]
-            )
+            trans_volume = transaction.volume if transaction.order_matched_volume is None else transaction.order_matched_volume[sell_id]
             limit_order.decrease_volume(trans_volume)
             assert limit_order.volume >= 0
             if limit_order.volume == 0:
@@ -180,6 +185,7 @@ class BaseAgent:
         type: str,
         price: int,
         volume: int,
+        random: Optional[Random] = None,
     ) -> List[LimitOrder]:
         """Construct valid orders.
 
@@ -203,7 +209,7 @@ class BaseAgent:
         if type in ["B", "S"]:
             return self._construct_buy_sell_order(time, symbol, type, price, volume)
         else:
-            return self._construct_valid_cancel_orders(time, symbol, type, price, volume)
+            return self._construct_valid_cancel_orders(time, symbol, type, price, volume, random=random)
 
     def _construct_buy_sell_order(self, time: Timestamp, symbol: str, type: str, price: int, volume: int):
         """Construct buy or sell order based on type, price, volume."""
@@ -221,9 +227,12 @@ class BaseAgent:
         )
         return [order]
 
-    def _get_closest_existing_price(self, pred_price: int, prices: List[int]):
+    def _get_closest_existing_price(self, pred_price: int, prices: List[int], random: Optional[Random] = None):
         min_dis = sys.maxsize
-        shuffle(prices)
+        if random is None:
+            shuffle(prices)
+        else:
+            random.shuffle(prices)
         closest_price = -1
         for price in prices:
             dis = abs(price - pred_price)
@@ -235,7 +244,7 @@ class BaseAgent:
         assert closest_price > 0
         return closest_price
 
-    def _construct_valid_cancel_orders(self, time: Timestamp, symbol: str, type: str, price: int, volume: int):
+    def _construct_valid_cancel_orders(self, time: Timestamp, symbol: str, type: str, price: int, volume: int, random: Optional[Random] = None):
         """Construct valid cancel orders.
 
         The order id to cancel is based on agent's existing orders on orderbook.
@@ -246,7 +255,7 @@ class BaseAgent:
         if not valid_prices:
             return orders
 
-        price = self._get_closest_existing_price(pred_price=price, prices=valid_prices)
+        price = self._get_closest_existing_price(pred_price=price, prices=valid_prices, random=random)
         state = self.symbol_states[symbol][State.__name__]
         lob = state.lob_snapshot
         assert lob is not None

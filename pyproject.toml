@@ -5,20 +5,101 @@ reportUnknownVariableType = false
 reportUnknownArgumentType = false
 reportUnknownMemberType = false
 
+
+ignore = [".git", ".eggs", "tmp"]
+
 [tool.mypy]
-exclude = [
-    "tmp",
-]
+exclude = [".git", ".eggs", "tmp"]
 
 ignore_missing_imports = true
 
 [tool.ruff]
-line-length = 120
+
+unsafe-fixes = true
+line-length = 150
 indent-width = 4
+target-version = "py312"
+
+exclude = [".git", ".eggs", "tmp"]
+
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F"]
+select = ["ALL"]
 
+ignore = [
+    "D100",    # missing docstring in public module
+    "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed in
+    "S301",    # pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue
+    "RET504",  # Unnecessary assignment to {name} before return statement
+    "BLE001",  # Do not catch blind exception: {name}
+    "G004",    # Logging statement uses f-string
+    "ERA001",  # Found commented-out code
+    "D104",    # Missing docstring in public package
+    "ISC001",  # Implicitly concatenated string literals on one line
+    "COM812",  # Trailing comma missing
+    "TD003",   # Missing issue link on the line following this TODO
+    "FIX002",  # Line contains TODO, consider resolving the issue
+    "PIE790",  # Unnecessary pass statement
+    "S101",    # Use of assert detected
+    "D107",    # Missing docstring in __init__
+    "EM101",   # Exception must not use a string literal, assign to variable first
+    "SIM108",  # Use ternary operator {contents} instead of if-else-block
+    "TRY003",  # Avoid specifying long messages outside the exception class
+    "D105",    # Missing docstring in magic method
+    "PGH003",  # Use specific rule codes when ignoring type issues
+    "SIM103",  # Return the condition {condition} directly
+    "EM102",   # Exception must not use an f-string literal, assign to variable first
+    "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
+    "PT018",   # Assertion should be broken down into multiple parts
+    "PLR1711", # Useless return statement at end of function
+    "RET501",  # Do not explicitly return None in function if it is the only possible return value
+    "RUF015",  # Prefer next({iterable}) over single element slice
+    "S311",    # Standard pseudo-random generators are not suitable for cryptographic purposes
+    "C901",    # {name} is too complex ({complexity} > {max_complexity})
+    "PLR0912", # Too many branches ({branches} > {max_branches})
+    "NPY002",  # Replace legacy np.random.{method_name} call with np.random.Generator
+    "DTZ001",  # datetime.datetime() called without a tzinfo argument
+    "S113",    # Probable use of {module} call without timeout
+    "PERF401", # Use {message_str} to create a transformed list
+    "S105",    # Possible hardcoded password assigned to: "{}"
+    "FA100",   # Add from __future__ import annotations to simplify {name}
+    "ANN101",  # Missing type annotation for {name} in method
+    "ANN102",  # Missing type annotation for {name} in classmethod
+    "TRY300",  # Consider moving this statement to an else block
+    "LOG015",  # {}() call on root logger
+    # all rules: https://docs.astral.sh/ruff/rules/
+]
+
+fixable = [
+    "I001",    # Import block is un-sorted or un-formatted
+    "Q000",    # Single quotes found but double quotes preferred
+    "COM812",  # Trailing comma missing
+    "D202",    # No blank lines allowed after function docstring (found {num_lines})
+    "F541",    # f-string without any placeholders
+    "TD",      # flake8-todos (TD)
+    "TCH",     # flake8-type-checking (TCH)
+    "F811",    # Redefinition of unused {name} from {row}
+    "PLR2044", # Line with empty comment
+    "D209",    # Multi-line docstring closing quotes should be on a separate line
+    "C400",    # Unnecessary generator (rewrite using list())
+    "C401",    # Unnecessary generator (rewrite using set())
+    "C402",    # Unnecessary generator (rewrite as a dict comprehension)
+    "C416",    # Unnecessary {obj_type} comprehension (rewrite using {obj_type}())
+    "ANN201",  # Missing return type annotation for public function {name}
+    "ANN202",  # Missing return type annotation for private function {name}
+    "ANN204",  # Missing return type annotation for special method {name}
+    "ANN205",  # Missing return type annotation for staticmethod {name}
+    "ANN206",  # Missing return type annotation for classmethod {name}
+]
+
+
+[tool.ruff.lint.pylint]
+max-args = 15
+max-branches = 20
+max-returns = 15
+
+[tool.ruff.lint.mccabe]
+max-complexity = 20 # max length of function name
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
