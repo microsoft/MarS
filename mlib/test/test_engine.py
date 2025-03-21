@@ -8,21 +8,23 @@ from mlib.core.exchange_config import create_exchange_config_without_call_auctio
 from mlib.core.time_utils import get_ts
 
 
-def test_priority_queue():
+def test_priority_queue() -> None:
+    """Test priority queue."""
     engine: Engine = Engine(exchange=None, verbose=True)  # type: ignore
     now = Timestamp("2020-02-02")
     yesterday = Timestamp("2020-02-01")
     engine.push_event(Event(now))
     engine.push_event(Event(yesterday))
-    pop_event0 = engine._pop_event()  # type: ignore
-    pop_event1 = engine._pop_event()  # type: ignore
+    pop_event0 = engine._pop_event()  # type: ignore  # noqa: SLF001
+    pop_event1 = engine._pop_event()  # type: ignore  # noqa: SLF001
     assert pop_event0.time == yesterday
     assert pop_event0.event_id == 1
     assert pop_event1.time == now
     assert pop_event1.event_id == 0
 
 
-def test_engine_run():
+def test_engine_run() -> None:
+    """Run engine test."""
     date = Timestamp("2020-01-01")
     symbols = ["000001"]
     config = create_exchange_config_without_call_auction(
@@ -36,9 +38,6 @@ def test_engine_run():
     engine.run()
 
 
-def main():
-    test_engine_run()
-
-
 if __name__ == "__main__":
-    main()
+    test_priority_queue()
+    test_engine_run()

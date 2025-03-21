@@ -67,6 +67,9 @@ ignore = [
     "ANN102",  # Missing type annotation for {name} in classmethod
     "TRY300",  # Consider moving this statement to an else block
     "LOG015",  # {}() call on root logger
+    "ARG002",  # Unused method argument: {name}
+    "A002",    # Function argument {name} is shadowing a Python builtin
+    "A001",    # Variable {name} is shadowing a Python builtin
     # all rules: https://docs.astral.sh/ruff/rules/
 ]
 
@@ -90,6 +93,9 @@ fixable = [
     "ANN204",  # Missing return type annotation for special method {name}
     "ANN205",  # Missing return type annotation for staticmethod {name}
     "ANN206",  # Missing return type annotation for classmethod {name}
+    "UP006",   # Use {to} instead of {from} for type annotation
+    "UP007",   # Use X | Y for type annotations
+    "RSE102",  # Unnecessary parentheses on raised exception
 ]
 
 

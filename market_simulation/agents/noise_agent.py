@@ -3,7 +3,6 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
 import pandas as pd
 
 from market_simulation.states.trade_info_state import TradeInfoState

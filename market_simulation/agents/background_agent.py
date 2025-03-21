@@ -1,5 +1,3 @@
-from typing import Optional, Tuple
-
 import numpy as np
 import numpy.typing as npt
 from pandas import Timedelta, Timestamp
@@ -30,7 +28,7 @@ class BackgroundAgent(BaseAgent):
         self.converter = converter
         self.model_client = model_client
         self.num_pred_orders = 0
-        self.planned_action: Optional[PredOrderInfo] = None
+        self.planned_action: PredOrderInfo | None = None
         self.init_agent = init_agent
         self.finish_init: bool = False
 
@@ -79,8 +77,8 @@ class BackgroundAgent(BaseAgent):
         wakeup_time = time + Timedelta(seconds=self.converter.order_interval.sample(pred_order.interval))
         self.planned_action = PredOrderInfo(
             order_type=pred_order.order_type,
-            price=mid_price + int(round(self.converter.price_level.sample(pred_order.price))),
-            volume=int(round(self.converter.pred_order_volume.sample(pred_order.volume))),
+            price=mid_price + round(self.converter.price_level.sample(pred_order.price)),
+            volume=round(self.converter.pred_order_volume.sample(pred_order.volume)),
             interval=0,
         )
         action = Action(
@@ -92,7 +90,7 @@ class BackgroundAgent(BaseAgent):
         self.num_pred_orders += 1
         return action
 
-    def get_order_state(self) -> Tuple[int, npt.NDArray[np.int32], OrderState]:
+    def get_order_state(self) -> tuple[int, npt.NDArray[np.int32], OrderState]:
         """Get order state from OrderState."""
         state = self.symbol_states[self.symbol][OrderState.__name__]
         assert isinstance(state, OrderState)

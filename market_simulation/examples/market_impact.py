@@ -212,7 +212,7 @@ def plot_price_curves(tasks: list[RolloutTask], rollouts: list[list[TradeInfo]],
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     prices = []
-    for i, (task, trade_infos) in enumerate(zip(tasks, rollouts)):
+    for i, (task, trade_infos) in enumerate(zip(tasks, rollouts, strict=True)):
         trading_agent_orders: set[int] = set()
         finished_volume: int = 0
         for trade_info in trade_infos:

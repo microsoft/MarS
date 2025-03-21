@@ -25,4 +25,8 @@
         },
         "editor.defaultFormatter": "charliermarsh.ruff"
     },
+    "ruff.lint.args": [
+        "args: [--config=pyproject.toml]",
+        "--unsafe-fixes", // Aggressive fixes.
+    ]
 }

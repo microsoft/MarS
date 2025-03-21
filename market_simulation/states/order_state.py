@@ -1,7 +1,7 @@
 # pyright: strict, reportUnknownMemberType=false
 from collections import deque
 from pathlib import Path
-from typing import TYPE_CHECKING, Deque, List, NamedTuple, Optional
+from typing import TYPE_CHECKING, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
@@ -47,12 +47,12 @@ class OrderInfo:
         self,
         cur_order_lob: LobSnapshot,
         cur_order: LimitOrder,
-        transactions: List[Transaction],
+        transactions: list[Transaction],
         order_index: int,
         interval_seconds: float,
         price_change_to_open: int,
         time_to_open: int,
-        lob_volumes: List[int],
+        lob_volumes: list[int],
     ) -> None:
         self.time = cur_order.time
         self.trans_ratio = self.get_trans_ratio(transactions, cur_order)
@@ -66,7 +66,7 @@ class OrderInfo:
         self.lob_volumes = lob_volumes
 
     @staticmethod
-    def get_trans_ratio(trans: List[Transaction], cur_order: LimitOrder) -> float:
+    def get_trans_ratio(trans: list[Transaction], cur_order: LimitOrder) -> float:
         """Get transaction ratio, which is the ratio of transaction volume to order volume."""
         if cur_order.type == "C":
             return 1.0
@@ -86,7 +86,7 @@ class OrderInfo:
 
     def to_vector(self) -> npt.NDArray[np.int32]:
         """Convert order info to vector."""
-        values: List[int] = [
+        values: list[int] = [
             self.order_index,
             int(np.floor(self.volume_ratio * 0.99 * OrderInfo.NUM_RATIO_SLOTS)),  # volume ratio slot, [0, 9]
             int(np.floor(self.trans_ratio * 0.99 * OrderInfo.NUM_RATIO_SLOTS)),  # trans ratio slot, [0, 9],
@@ -137,15 +137,15 @@ class OrderState(State):
         super().__init__()
         self.num_max_orders = num_max_orders
         self.converter = converter
-        self.recent_orders: Deque[OrderInfo] = deque()
-        self.latest_lob: Optional[LobSnapshot] = None
+        self.recent_orders: deque[OrderInfo] = deque()
+        self.latest_lob: LobSnapshot | None = None
 
-        self.prev_order: Optional[LimitOrder] = None
-        self.prev_order_lob: Optional[LobSnapshot] = None  # lob for prev_order
-        self.cur_order_lob: Optional[LobSnapshot] = None
-        self.cur_order: Optional[LimitOrder] = None
-        self.open_trans_price: Optional[float] = None
-        self.open_time: Optional[pd.Timestamp] = None
+        self.prev_order: LimitOrder | None = None
+        self.prev_order_lob: LobSnapshot | None = None  # lob for prev_order
+        self.cur_order_lob: LobSnapshot | None = None
+        self.cur_order: LimitOrder | None = None
+        self.open_trans_price: float | None = None
+        self.open_time: pd.Timestamp | None = None
         self.num_bins_price_level = num_bins_price_level
         self.num_bins_pred_order_volume = num_bins_pred_order_volume
         self.num_bins_order_interval = num_bins_order_interval
@@ -230,18 +230,18 @@ class OrderState(State):
             interval=interval_slot,
         )
 
-    def get_lob_volume_slots(self, lob: LobSnapshot, total_len: int = 10) -> List[int]:
+    def get_lob_volume_slots(self, lob: LobSnapshot, total_len: int = 10) -> list[int]:
         """Get volume slots from lob."""
         assert total_len % 2 == 0
         offset: int = total_len // 2
-        volume_slots: List[int] = [0] * total_len
+        volume_slots: list[int] = [0] * total_len
         mid_price = lob.mid_price
-        for price, volume in zip(lob.ask_prices, lob.ask_volumes):
+        for price, volume in zip(lob.ask_prices, lob.ask_volumes, strict=True):
             price_slot = (price - mid_price) // 100 + offset
             if 0 <= price_slot < total_len:
                 volume_slots[price_slot] = self.converter.lob_volume.get_bin_index(volume) + 1
 
-        for price, volume in zip(lob.bid_prices, lob.bid_volumes):
+        for price, volume in zip(lob.bid_prices, lob.bid_volumes, strict=True):
             price_slot = (price - mid_price) // 100 + offset
             if 0 <= price_slot < total_len:
                 volume_slots[price_slot] = self.converter.lob_volume.get_bin_index(volume) + 1
@@ -318,7 +318,7 @@ class OrderState(State):
 
     def to_vector(self) -> npt.NDArray[np.int32]:
         """Convert order state to vector."""
-        vectors: List[npt.NDArray[np.int32]] = []
+        vectors: list[npt.NDArray[np.int32]] = []
 
         assert self.cur_order is not None
         assert self.latest_lob is not None

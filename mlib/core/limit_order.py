@@ -1,5 +1,5 @@
 # pyright: strict
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
@@ -10,10 +10,7 @@ if TYPE_CHECKING:
 
 
 class LimitOrder(BaseOrder):
-    """Currently, just make LimitOrder immutable from outside of this class.
-    In the future, if we observe significant performance overhead,
-    it should be easy to make them public mutable.
-    """
+    """Limit order."""
 
     def __init__(
         self,
@@ -40,54 +37,67 @@ class LimitOrder(BaseOrder):
         return f"order id: {self.order_id}, price {self.price}, volume {self.volume}, type: {self.type}, cancel: {self.is_cancel}({self.cancel_type})"
 
     @property
-    def type(self):
+    def type(self) -> str:
+        """Order type: B for buy, S for sell, C for cancel."""
         return self._type
 
     @property
-    def price(self):
+    def price(self) -> int:
+        """Order price."""
         return self._price
 
     @property
-    def volume(self):
+    def volume(self) -> int:
+        """Order volume."""
         return self._volume
 
     @property
-    def cancel_type(self):
+    def cancel_type(self) -> str:
+        """Cancel type: B for buy, S for sell."""
         return self._cancel_type
 
     @property
-    def cancel_id(self):
+    def cancel_id(self) -> int:
+        """Order id of the order to be cancelled."""
         return self._cancel_id
 
     @property
-    def tag(self):
+    def tag(self) -> str:
+        """Tag for the order."""
         return self._tag
 
     @property
-    def is_cancel(self):
+    def is_cancel(self) -> bool:
+        """Whether the order is a cancel order."""
         return self._type == "C"
 
     @property
-    def is_buy(self):
+    def is_buy(self) -> bool:
+        """Whether the order is a buy order."""
         return self._type == "B"
 
     @property
-    def is_sell(self):
+    def is_sell(self) -> bool:
+        """Whether the order is a sell order."""
         return self._type == "S"
 
     @property
-    def is_cancel_buy(self):
+    def is_cancel_buy(self) -> bool:
+        """Whether the order is a cancel buy order."""
         return self.is_cancel and self.cancel_type == "B"
 
     @property
-    def is_cancel_sell(self):
+    def is_cancel_sell(self) -> bool:
+        """Whether the order is a cancel sell order."""
         return self.is_cancel and self.cancel_type == "S"
 
-    def decrease_volume(self, volume_to_decrease: int):
+    def decrease_volume(self, volume_to_decrease: int) -> None:
+        """Decrease the volume of the order."""
         assert volume_to_decrease > 0
         self._volume -= volume_to_decrease
 
-    def clone(self):
+    def clone(self) -> "LimitOrder":
+        """Clone the order."""
         return LimitOrder(
             time=self.time,
             type=self.type,
@@ -101,5 +111,6 @@ class LimitOrder(BaseOrder):
             tag=self.tag,
         )
 
-    def get_limit_orders(self, orderbook: "Orderbook") -> List["LimitOrder"]:
+    def get_limit_orders(self, orderbook: "Orderbook") -> list["LimitOrder"]:
+        """Convert to limit orders with orderbook information."""
         return [self.clone()]

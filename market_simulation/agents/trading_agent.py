@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Literal
 
 import numpy as np
 from pandas import Timedelta, Timestamp
@@ -53,19 +53,20 @@ class TradingAgent(BaseAgent):
         self.aggressive_price_change = aggressive_price_change
         self.max_passive_volume_ratio = max_passive_volume_ratio
         self.max_aggressive_volume_ratio = max_aggressive_volume_ratio
-        # print agent parameters
-        print(
-            f"TradingAgent {self.start_time=} {self.direction=} {self.target_volume=} {self.aggressive_price_change=} {max_passive_volume_ratio=} {max_aggressive_volume_ratio=}"
+        # logging.info agent parameters
+        logging.info(
+            f"TradingAgent {self.start_time=} {self.direction=} {self.target_volume=} {self.aggressive_price_change=} {max_passive_volume_ratio=} {max_aggressive_volume_ratio=}"  # noqa: E501
         )
 
-    def get_trivial_action(self, observation: Observation) -> Optional[Action]:
+    def get_trivial_action(self, observation: Observation) -> Action | None:
+        """Get trivial action."""
         cur_time = observation.time
         if cur_time >= self.end_time:
             lob_orders = list(self.lob_orders[self.symbol].values())
             cancel_orders = get_cancel_orders(lob_orders)
             limit_orders = self.get_limit_orders(cur_time, cancel_orders)
             if lob_orders:
-                print(
+                logging.info(
                     f"{cur_time=}, Cancel all remaining volume {self.direction=} {self.completed_volume =} of {self.target_volume=}, {limit_orders=}."
                 )
             return Action(
@@ -86,12 +87,13 @@ class TradingAgent(BaseAgent):
         return None
 
     def get_action(self, observation: Observation) -> Action:
+        """Get action."""
         trivial_action = self.get_trivial_action(observation)
         if trivial_action is not None:
             return trivial_action
 
         if self.completed_volume >= self.target_volume:
-            print(f"Finished {self.direction=} {self.completed_volume =} of {self.target_volume=}.")
+            logging.info(f"Finished {self.direction=} {self.completed_volume =} of {self.target_volume=}.")
             return Action(
                 agent_id=self.agent_id,
                 orders=[],
@@ -133,8 +135,8 @@ class TradingAgent(BaseAgent):
                 passive_seconds=self.passive_seconds,
                 idle_seconds=self.idle_seconds,
             )
-        print(
-            f"{cur_time=}, {self.stage=}, {self.target_volume=}, {self.completed_volume=}, {self.max_passive_volume_ratio=}, {self.max_aggressive_volume_ratio=}, {elapsed_seconds=} {orders=}, {sleep_seconds=}"
+        logging.info(
+            f"{cur_time=}, {self.stage=}, {self.target_volume=}, {self.completed_volume=}, {self.max_passive_volume_ratio=}, {self.max_aggressive_volume_ratio=}, {elapsed_seconds=} {orders=}, {sleep_seconds=}"  # noqa: E501
         )
         self.stage = "passive" if self.stage == "aggressive" else "aggressive"  # switch stage
         limit_orders = self.get_limit_orders(cur_time, orders)
@@ -146,8 +148,9 @@ class TradingAgent(BaseAgent):
         )
         return action
 
-    def get_limit_orders(self, time: Timestamp, orders: List[PredOrderInfo]) -> List[LimitOrder]:
-        limit_orders: List[LimitOrder] = []
+    def get_limit_orders(self, time: Timestamp, orders: list[PredOrderInfo]) -> list[LimitOrder]:
+        """Get limit orders from predicted orders."""
+        limit_orders: list[LimitOrder] = []
         for order in orders:
             if order.volume == 0:
                 continue
@@ -193,14 +196,16 @@ class TradingAgent(BaseAgent):
 
         return limit_orders
 
-    def get_lob(self):
+    def get_lob(self) -> LobSnapshot:
+        """Get the latest LOB snapshot from the TradeInfoState."""
         state = self.symbol_states[self.symbol][TradeInfoState.__name__]
         assert isinstance(state, TradeInfoState)
         assert state.trade_infos
         lob = state.trade_infos[-1].lob_snapshot
         return lob
 
-    def on_order_executed(self, time: Timestamp, transaction: Transaction, trans_order_id_to_notify: int):
+    def on_order_executed(self, time: Timestamp, transaction: Transaction, trans_order_id_to_notify: int) -> list[tuple[str, int]]:
+        """Handle order execution."""
         order_id = trans_order_id_to_notify
         assert order_id in self.lob_orders[self.symbol]
         for id in transaction.buy_id + transaction.sell_id:
@@ -222,13 +227,13 @@ def get_100_padded_volume(volume: int) -> int:
     return volume
 
 
-def get_cancel_orders(orders_to_cancel: List[LimitOrder], total_cancel_volume: Optional[int] = None) -> List[PredOrderInfo]:
+def get_cancel_orders(orders_to_cancel: list[LimitOrder], total_cancel_volume: int | None = None) -> list[PredOrderInfo]:
     """Create orders to cancel orders_to_cancel.
 
     First, it aggregates orders by price, then create cancel orders for each price level.
     """
-    cancel_orders: List[PredOrderInfo] = []
-    price_volumes: Dict[int, int] = {}
+    cancel_orders: list[PredOrderInfo] = []
+    price_volumes: dict[int, int] = {}
     if total_cancel_volume is None:
         total_cancel_volume = sum(order.volume for order in orders_to_cancel)
     assert total_cancel_volume is not None
@@ -247,7 +252,7 @@ def get_cancel_orders(orders_to_cancel: List[LimitOrder], total_cancel_volume: O
     return cancel_orders
 
 
-def get_ask1_bid1_prices(lob_snapshot: LobSnapshot) -> Tuple[int, int]:
+def get_ask1_bid1_prices(lob_snapshot: LobSnapshot) -> tuple[int, int]:
     """Get ask1 price and bid1 price from lob_snapshot."""
     ask1_price = lob_snapshot.last_price
     if lob_snapshot.ask_prices:
@@ -268,7 +273,7 @@ def get_buy_action(
     stage: TradingStage,
     target_volume: int,
     completed_volume: int,
-    lob_orders: List[LimitOrder],
+    lob_orders: list[LimitOrder],
     lob_snapshot: LobSnapshot,
     aggressive_price_change: int,
     max_passive_volume_ratio: float,
@@ -277,7 +282,7 @@ def get_buy_action(
     total_seconds: int = 300,
     passive_seconds: int = 20,
     idle_seconds: int = 10,
-) -> Tuple[List[PredOrderInfo], int]:
+) -> tuple[list[PredOrderInfo], int]:
     """Get buy action.
 
     The basic idea is to split the trading time into several (passive_seconds + idle_seconds), each with similar volume.
@@ -304,12 +309,12 @@ def get_buy_action(
     max_passive_volume = get_100_padded_volume(int(target_volume * max_passive_volume_ratio))
     max_aggressive_volume = get_100_padded_volume(int(target_volume * max_aggressive_volume_ratio))
 
-    to_submit_orders: List[PredOrderInfo] = []
+    to_submit_orders: list[PredOrderInfo] = []
 
     ask1_price, bid1_price = get_ask1_bid1_prices(lob_snapshot)
     if stage == "passive":
         # cancel all orders whose price is not the bid1_price (best bid price)
-        to_cancel_orders: List[LimitOrder] = [order for order in lob_orders if order.price != bid1_price]  # to submit
+        to_cancel_orders: list[LimitOrder] = [order for order in lob_orders if order.price != bid1_price]  # to submit
         lob_orders = [order for order in lob_orders if order.price == bid1_price]
         assert all(order.type == "B" for order in to_cancel_orders)
         to_submit_orders.extend(get_cancel_orders(to_cancel_orders))
@@ -328,34 +333,34 @@ def get_buy_action(
             cancel_volume = existing_bid1_volume - max_passive_volume
             to_submit_orders.extend(get_cancel_orders(lob_orders, cancel_volume))
         return to_submit_orders, passive_seconds
-    else:
-        assert stage == "aggressive"
-        assert elapsed_seconds + idle_seconds <= total_seconds
-        expected_completed_volume = np.round(target_volume * (elapsed_seconds + idle_seconds) / total_seconds)
-        if expected_completed_volume <= completed_volume:
-            return [], idle_seconds
-        new_volume = get_100_padded_volume(int(expected_completed_volume - completed_volume))
-        new_volume = min(new_volume, max_aggressive_volume)
-        available_volume = remaining_volume - sum(order.volume for order in lob_orders)
-        if available_volume < new_volume:
-            #  cancel all passive orders and sell all remaining if available_volume < new_volume
-            to_submit_orders.extend(get_cancel_orders(lob_orders, new_volume - available_volume))
-            available_volume += sum(order.volume for order in to_submit_orders)
-            assert available_volume + 100 > new_volume, f"{available_volume=}, {new_volume=}"
-            new_volume = available_volume
-        assert 0 <= new_volume <= available_volume <= remaining_volume
-        if new_volume > 0:
-            to_submit_orders.append(
-                PredOrderInfo(order_type="B", price=ask1_price + aggressive_price_change, volume=new_volume, interval=0)
-            )  # buy at market price
-        return to_submit_orders, idle_seconds
+
+    assert stage == "aggressive"
+    assert elapsed_seconds + idle_seconds <= total_seconds
+    expected_completed_volume = np.round(target_volume * (elapsed_seconds + idle_seconds) / total_seconds)
+    if expected_completed_volume <= completed_volume:
+        return [], idle_seconds
+    new_volume = get_100_padded_volume(int(expected_completed_volume - completed_volume))
+    new_volume = min(new_volume, max_aggressive_volume)
+    available_volume = remaining_volume - sum(order.volume for order in lob_orders)
+    if available_volume < new_volume:
+        #  cancel all passive orders and sell all remaining if available_volume < new_volume
+        to_submit_orders.extend(get_cancel_orders(lob_orders, new_volume - available_volume))
+        available_volume += sum(order.volume for order in to_submit_orders)
+        assert available_volume + 100 > new_volume, f"{available_volume=}, {new_volume=}"
+        new_volume = available_volume
+    assert 0 <= new_volume <= available_volume <= remaining_volume
+    if new_volume > 0:
+        to_submit_orders.append(
+            PredOrderInfo(order_type="B", price=ask1_price + aggressive_price_change, volume=new_volume, interval=0)
+        )  # buy at market price
+    return to_submit_orders, idle_seconds
 
 
 def get_sell_action(
     stage: TradingStage,
     target_volume: int,
     completed_volume: int,
-    lob_orders: List[LimitOrder],
+    lob_orders: list[LimitOrder],
     lob_snapshot: LobSnapshot,
     aggressive_price_change: int,
     max_passive_volume_ratio: float,
@@ -364,19 +369,19 @@ def get_sell_action(
     total_seconds: int,
     passive_seconds: int = 20,
     idle_seconds: int = 10,
-):
+) -> tuple[list[PredOrderInfo], int]:
     """Get sell action."""
     assert total_seconds > passive_seconds + idle_seconds
     assert total_seconds % (passive_seconds + idle_seconds) == 0
     remaining_volume = target_volume - completed_volume
     max_passive_volume = get_100_padded_volume(int(target_volume * max_passive_volume_ratio))
     max_aggressive_volume = get_100_padded_volume(int(target_volume * max_aggressive_volume_ratio))
-    to_submit_orders: List[PredOrderInfo] = []
+    to_submit_orders: list[PredOrderInfo] = []
 
     ask1_price, bid1_price = get_ask1_bid1_prices(lob_snapshot)
     if stage == "passive":
         # cancel all orders whose price is not the ask1_price (best ask price)
-        to_cancel_orders: List[LimitOrder] = [order for order in lob_orders if order.price != ask1_price]  # to submit
+        to_cancel_orders: list[LimitOrder] = [order for order in lob_orders if order.price != ask1_price]  # to submit
         lob_orders = [order for order in lob_orders if order.price == ask1_price]
         assert all(order.type == "S" for order in to_cancel_orders)
         to_submit_orders.extend(get_cancel_orders(to_cancel_orders))
@@ -394,27 +399,27 @@ def get_sell_action(
             cancel_volume = existing_ask1_volume - max_passive_volume
             to_submit_orders.extend(get_cancel_orders(lob_orders, cancel_volume))
         return to_submit_orders, passive_seconds
-    else:
-        assert stage == "aggressive"
-        assert elapsed_seconds + idle_seconds <= total_seconds
-        expected_completed_volume = np.round(target_volume * (elapsed_seconds + idle_seconds) / total_seconds)
-        if expected_completed_volume <= completed_volume:
-            return [], idle_seconds
-        new_volume = get_100_padded_volume(int(expected_completed_volume - completed_volume))
-        new_volume = min(new_volume, max_aggressive_volume)
-        available_volume = remaining_volume - sum(order.volume for order in lob_orders)
-        if available_volume < new_volume:
-            #  cancel all passive orders and sell all remaining if available_volume < new_volume
-            to_submit_orders.extend(get_cancel_orders(lob_orders, new_volume - available_volume))
-            available_volume += sum(order.volume for order in to_submit_orders)
-            assert available_volume + 100 > new_volume, f"{available_volume=}, {new_volume=}"
-            new_volume = available_volume
-        assert 0 <= new_volume <= available_volume <= remaining_volume
-        if new_volume > 0:
-            to_submit_orders.append(
-                PredOrderInfo(order_type="S", price=bid1_price - aggressive_price_change, volume=new_volume, interval=0)
-            )  # sell at market price
-        return to_submit_orders, idle_seconds
+
+    assert stage == "aggressive"
+    assert elapsed_seconds + idle_seconds <= total_seconds
+    expected_completed_volume = np.round(target_volume * (elapsed_seconds + idle_seconds) / total_seconds)
+    if expected_completed_volume <= completed_volume:
+        return [], idle_seconds
+    new_volume = get_100_padded_volume(int(expected_completed_volume - completed_volume))
+    new_volume = min(new_volume, max_aggressive_volume)
+    available_volume = remaining_volume - sum(order.volume for order in lob_orders)
+    if available_volume < new_volume:
+        #  cancel all passive orders and sell all remaining if available_volume < new_volume
+        to_submit_orders.extend(get_cancel_orders(lob_orders, new_volume - available_volume))
+        available_volume += sum(order.volume for order in to_submit_orders)
+        assert available_volume + 100 > new_volume, f"{available_volume=}, {new_volume=}"
+        new_volume = available_volume
+    assert 0 <= new_volume <= available_volume <= remaining_volume
+    if new_volume > 0:
+        to_submit_orders.append(
+            PredOrderInfo(order_type="S", price=bid1_price - aggressive_price_change, volume=new_volume, interval=0)
+        )  # sell at market price
+    return to_submit_orders, idle_seconds
 
 
 def _get_limit_order(type: str, price: int, volume: int) -> LimitOrder:

@@ -1,6 +1,6 @@
 # pyright: strict
 import logging
-from typing import List, NamedTuple
+from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -12,13 +12,14 @@ class LobSnapshot(NamedTuple):
     time: pd.Timestamp
     max_level: int
     last_price: int
-    ask_prices: List[int]
-    ask_volumes: List[int]
-    bid_prices: List[int]
-    bid_volumes: List[int]
+    ask_prices: list[int]
+    ask_volumes: list[int]
+    bid_prices: list[int]
+    bid_volumes: list[int]
 
     @property
     def spread(self) -> int:
+        """Get spread of LOB snapshot."""
         if self.ask_prices and self.bid_prices:
             spread = self.ask_prices[0] - self.bid_prices[0]
         else:
@@ -27,30 +28,30 @@ class LobSnapshot(NamedTuple):
         return spread
 
     @property
-    def mid_price(self):
+    def mid_price(self) -> int:
         """Get mid price of LOB snapshot, the returned price is a valid tick on LOB."""
         spread: int = self.spread
         real_price_interval = 100
         bid0 = self.bid_prices[0] if self.bid_prices else self.last_price - real_price_interval * 10
         if self.ask_prices and self.bid_prices:
             return bid0 + spread // real_price_interval // 2 * real_price_interval
-        elif self.ask_prices:
+        if self.ask_prices:
             logging.debug("bid is empty, return ask0 for mid price")
             return self.ask_prices[0]
-        elif self.bid_prices:
+        if self.bid_prices:
             logging.debug("ask is empty, return bid0 for mid price")
             return self.bid_prices[0]
-        elif self.last_price > 0:
+        if self.last_price > 0:
             logging.debug(f"Both ask/bid are empty, return cur price: {self.last_price}")
             return self.last_price
-        else:
-            raise ValueError("unknown mid price")
+
+        raise ValueError("unknown mid price")
 
     @property
     def float_mid_price(self) -> float:
         """Get mid price of LOB snapshot, the returned price is a float value and may be not valid on LOB."""
         if not self.ask_prices and not self.bid_prices:
-            print(f"warning: empty LOB (no ask/bid prices), last price: {self.last_price}")
+            logging.warning(f"empty LOB (no ask/bid prices), last price: {self.last_price}")
             assert self.last_price is not None
             assert not np.isnan(self.last_price)
             return self.last_price
@@ -68,7 +69,7 @@ class LobSnapshot(NamedTuple):
     def float_weighted_mid_price(self) -> float:
         """Get weighted-mid price of LOB snapshot."""
         if not self.ask_prices and not self.bid_prices:
-            print(f"warning: empty LOB (no ask/bid prices), last price: {self.last_price}")
+            logging.warning(f"empty LOB (no ask/bid prices), last price: {self.last_price}")
             assert self.last_price is not None
             assert not np.isnan(self.last_price)
             return self.last_price

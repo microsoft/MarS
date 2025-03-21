@@ -1,5 +1,5 @@
 import random
-from typing import Counter, List, Set, Tuple
+from typing import Counter  # noqa: UP035
 
 import numpy as np
 
@@ -8,20 +8,20 @@ class BinConverter:
     """Create bins, get bin index and sample from bin index."""
 
     @staticmethod
-    def create_from_values(values: List[float], num_bins: int, num_sample_per_bin: int = 100) -> "BinConverter":
+    def create_from_values(values: list[float], num_bins: int, num_sample_per_bin: int = 100) -> "BinConverter":
         """Create bin converter from values."""
         converter = BinConverter()
         converter.init(values=values, num_bins=num_bins, num_sample_per_bin=num_sample_per_bin)
         return converter
 
-    def init(self, values: List[float], num_bins: int, num_sample_per_bin: int = 100) -> None:
+    def init(self, values: list[float], num_bins: int, num_sample_per_bin: int = 100) -> None:
         """Initialize bin converter."""
         random.shuffle(values)
         values = values[:1000000]
         self._create_bins(values, num_bins)
         self._create_sample_probs(values, num_sample_per_bin)
 
-    def _create_bins(self, values: List[float], num_bins: int) -> None:
+    def _create_bins(self, values: list[float], num_bins: int) -> None:
         assert num_bins > 1
         values.sort()
         self.num_bins: int = num_bins
@@ -29,7 +29,7 @@ class BinConverter:
         avg_bin_sample_count = len(values) / num_bins
 
         # extract single items that can occupy a single bin
-        single_item_bins: Set[float] = set()
+        single_item_bins: set[float] = set()
         for value, count in value_freq.items():
             if count > avg_bin_sample_count:
                 single_item_bins.add(value)
@@ -45,7 +45,7 @@ class BinConverter:
         num_values = len(values)
         available_bins = num_bins - len(single_item_bins) + 1
         cur_index = 0
-        bins: List[float] = [min_value, *list(single_item_bins)]
+        bins: list[float] = [min_value, *list(single_item_bins)]
         while available_bins > 0 and cur_index < num_values:
             steps = (num_values - cur_index) // (available_bins - 1)
             start_value = values[cur_index]
@@ -60,15 +60,15 @@ class BinConverter:
         assert len(bins) == self.num_bins + 1
         self.bins = np.array(bins)
 
-    def _create_sample_probs(self, values: List[float], num_sample_per_bin: int = 100) -> None:
+    def _create_sample_probs(self, values: list[float], num_sample_per_bin: int = 100) -> None:
         def normalize(arr: np.ndarray) -> np.ndarray:
             return arr / arr.sum()
 
         assert self.num_bins is not None and self.bins is not None
-        bin_values: List[List[float]] = [[] for _ in range(self.num_bins)]
+        bin_values: list[list[float]] = [[] for _ in range(self.num_bins)]
         for value in values:
             bin_values[self.get_bin_index(value)].append(value)
-        bin_top_items: List[List[Tuple[float, int]]] = [Counter(bin_values[i]).most_common(num_sample_per_bin) for i in range(self.num_bins)]
+        bin_top_items: list[list[tuple[float, int]]] = [Counter(bin_values[i]).most_common(num_sample_per_bin) for i in range(self.num_bins)]
         self.bin_values = [np.array([value for value, _ in bin]) for bin in bin_top_items]
         self.bin_probs = [normalize(np.array([count for _, count in bin])) for bin in bin_top_items]
         assert len(self.bin_values) == self.num_bins
@@ -101,7 +101,7 @@ def _test_bin_converter() -> None:
     from tqdm import tqdm
 
     num_values = 1000000
-    values: List[float] = [np.random.randint(0, 100) for _ in range(num_values)]
+    values: list[float] = [np.random.randint(0, 100) for _ in range(num_values)]
     bin_converter = BinConverter()
     num_bins = 30
 

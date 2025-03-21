@@ -227,6 +227,7 @@ def get_return_info(
     delta_ts: list[int],
     taus: list[int],
     price_type: PriceType = "last",
+    *,
     need_coarse_fine_info: bool = False,
 ) -> pd.DataFrame:
     """Get return info."""
@@ -282,7 +283,7 @@ def plot_cont1(rollout_infos: list[RolloutInfo], output_dir: Path, price_type: P
     data = get_return_info(rollout_infos, delta_ts=[1], taus=list(range(1, max_tau + 1)), price_type=price_type)
     groups = data.groupby(["source", "lag", "symbol"])
 
-    def r_corr(x, col1, col2):
+    def r_corr(x, col1, col2) -> float:  # noqa: ANN001
         return np.corrcoef(x[col1], x[col2])[0, 1]
 
     corr = groups.apply(lambda x: r_corr(x, "r1", "r2")).reset_index().rename(columns={0: "corr"})
@@ -419,7 +420,7 @@ def plot_cont6(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
     data["r2_abs"] = np.abs(data["r2"])
     groups = data.groupby(["source", "lag", "symbol"])
 
-    def r_corr(x, col1, col2):
+    def r_corr(x, col1, col2) -> float:  # noqa: ANN001
         return np.corrcoef(x[col1], x[col2])[0, 1]
 
     corr = groups.apply(lambda x: r_corr(x, "r1_abs", "r2_abs")).reset_index().rename(columns={0: "corr"})
@@ -496,7 +497,7 @@ def plot_cont9(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
     data["r2_abs"] = np.abs(data["r2"])
     groups = data.groupby(["source", "lag", "symbol"])
 
-    def r_corr(x, col1, col2):
+    def r_corr(x, col1, col2) -> float:  # noqa: ANN001
         return np.corrcoef(x[col1], x[col2])[0, 1]
 
     corr = groups.apply(lambda x: r_corr(x, "r1", "r2_abs")).reset_index().rename(columns={0: "corr"})
@@ -522,7 +523,7 @@ def plot_cont10(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
     data["r2_abs"] = np.abs(data["r2"])
     groups = data.groupby(["source", "lag", "symbol"])
 
-    def r_corr(x, col1, col2):
+    def r_corr(x, col1, col2) -> float:  # noqa: ANN001
         return np.corrcoef(x[col1], x[col2])[0, 1]
 
     corr = groups.apply(lambda x: r_corr(x, "volume", "r2_abs")).reset_index().rename(columns={0: "corr"})

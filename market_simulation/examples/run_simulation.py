@@ -1,10 +1,7 @@
 import logging
-import random
 from pathlib import Path
-from typing import List
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import dates
@@ -45,12 +42,12 @@ def run_simulation(seed: int = 0) -> None:
     for observation in env.env():
         action = observation.agent.get_action(observation)
         env.step(action)
-    trade_infos: List[TradeInfo] = get_trade_infos(exchange, symbols[0], start_time, end_time)
+    trade_infos: list[TradeInfo] = get_trade_infos(exchange, symbols[0], start_time, end_time)
     logging.info(f"Get {len(trade_infos)} trade infos.")
     plot_price_curves(trade_infos, Path("tmp/price_curves.png"))
 
 
-def get_trade_infos(exchange: Exchange, symbol: str, start_time: Timestamp, end_time: Timestamp) -> List[TradeInfo]:
+def get_trade_infos(exchange: Exchange, symbol: str, start_time: Timestamp, end_time: Timestamp) -> list[TradeInfo]:
     """Get trade infos from TradeInfoState."""
     state = exchange.states()[symbol][TradeInfoState.__name__]
     assert isinstance(state, TradeInfoState)
@@ -59,7 +56,7 @@ def get_trade_infos(exchange: Exchange, symbol: str, start_time: Timestamp, end_
     return trade_infos
 
 
-def plot_price_curves(trade_infos: List[TradeInfo], path: Path) -> None:
+def plot_price_curves(trade_infos: list[TradeInfo], path: Path) -> None:
     """Plot price curves."""
     path.parent.mkdir(parents=True, exist_ok=True)
     prices = [

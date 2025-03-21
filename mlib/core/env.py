@@ -1,6 +1,7 @@
 # pyright: strict
 
-from typing import Generator
+from collections.abc import Generator
+from typing import Any
 
 from pandas import Timestamp
 
@@ -24,10 +25,13 @@ from mlib.utils.time_progress import TimeProgress
 
 
 class Env(Engine):
-    def __init__(self, exchange: Exchange, description: str = "", verbose: bool = False) -> None:
-        super().__init__(exchange, description, verbose)
+    """Gym like env."""
+
+    def __init__(self, exchange: Exchange, description: str = "", *, verbose: bool = False) -> None:
+        super().__init__(exchange, description, verbose=verbose)
 
     def env(self) -> Generator[Observation, None, None]:
+        """Get env."""
         self.is_generator = True
         start_time = Timestamp.now()
         time_progress: TimeProgress = TimeProgress(
@@ -40,11 +44,12 @@ class Env(Engine):
                 time_progress.update(event.time)
         self._log(f"finished processing {self._num_event} events in {(Timestamp.now() - start_time).total_seconds()}s.")
 
-    def step(self, action: Action):
+    def step(self, action: Action) -> None:
+        """Update env with action."""
         assert self.is_generator
         self._on_receive_agent_action(action=action)
 
-    def _handle_event_generator(self, event: Event):  # type: ignore
+    def _handle_event_generator(self, event: Event) -> Generator[Observation, Any, None]:  # type: ignore
         assert event.event_id >= 0
 
         if isinstance(event, MarketOpenEvent):
@@ -60,17 +65,14 @@ class Env(Engine):
         elif isinstance(event, AgentReceiveTradingResultEvent):
             self._on_agent_receive_trading_result(event)
         else:
-            if (
-                isinstance(event, CallAuctionStartEvent)
-                or isinstance(event, ContinuousAuctionStartEvent)
-                or isinstance(event, ContinuousAuctionEndEvent)
-            ):
+            if isinstance(event, (CallAuctionStartEvent, ContinuousAuctionStartEvent, ContinuousAuctionEndEvent)):
                 return
             raise ValueError(f"event without handler: {event}")
 
-    def _on_agent_states_update_and_wakeup_generator(self, event: AgentStatesUpdateAndWakeup):
+    def _on_agent_states_update_and_wakeup_generator(self, event: AgentStatesUpdateAndWakeup) -> Generator[Observation, Any, None]:
         observation = self._get_updated_agent_observation(event)
         yield observation
 
     def run(self) -> None:
+        """Deprecated function."""
         raise NotImplementedError("run() is only available for Engine")

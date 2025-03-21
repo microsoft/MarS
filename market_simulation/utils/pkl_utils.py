@@ -45,7 +45,7 @@ def unzip_zstd(src_path: Path, dst_path: Path, max_retries: int = 5) -> None:
                 with tmp_path.open("wb") as decompressed_file:
                     dctx.copy_stream(compressed_file, decompressed_file)
                 shutil.move(str(tmp_path), str(dst_path))
-        except Exception as _:  # noqa: PERF203
+        except Exception as _:
             sleep(retry)
             logging.exception(f"retry: {retry}, IO exception when unzipping {src_path}")
         else:
@@ -69,7 +69,7 @@ def load_pkl_zstd(filepath: Path, num_retry: int = 10) -> Any:
     for retry in range(num_retry + 1):
         try:
             return _load_pkl_zstd(filepath)
-        except Exception as _:  # noqa: PERF203
+        except Exception as _:
             sleep(retry)
             logging.exception(f"retry: {retry}, IO exception when loading pkl {filepath}")
     msg = f"failed to load {filepath} after {num_retry} retries."
