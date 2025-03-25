@@ -28,13 +28,26 @@ if TYPE_CHECKING:
     from mlib.core.trade_info import TradeInfo
 
 
-def get_agent_for_init_state(
+def create_initialization_agent(
     symbol: str,
     seed: int,
     start_time: Timestamp,
     end_time: Timestamp,
 ) -> BaseAgent:
-    """Get agent for init state."""
+    """Create an initialization agent for market simulation.
+
+    Creates a noise agent that establishes initial market conditions before
+    the background agent takes over.
+
+    Args:
+        symbol: Market symbol identifier
+        seed: Random seed for reproducibility
+        start_time: Timestamp when the agent starts operating
+        end_time: Timestamp when the agent stops operating
+
+    Returns:
+        BaseAgent: Configured noise agent for initialization phase
+    """
     init_agent = NoiseAgent(
         symbol=symbol,
         init_price=100000,
@@ -47,7 +60,16 @@ def get_agent_for_init_state(
 
 
 class RolloutTask(NamedTuple):
-    """Rollout task."""
+    """Configuration parameters for a single market simulation rollout.
+
+    Attributes:
+        rollout_index: Unique identifier for this simulation run
+        symbol: Market symbol identifier
+        start_time: When the simulation begins
+        init_end_time: When initialization phase ends and background agent takes over
+        end_time: When the simulation ends
+        seed_for_init_state: Random seed for initialization phase
+    """
 
     rollout_index: int
     symbol: str
@@ -57,8 +79,18 @@ class RolloutTask(NamedTuple):
     seed_for_init_state: int
 
 
-def run_rollout_task(task: RolloutTask) -> list[TradeInfo]:
-    """Run a rollout task."""
+def execute_single_simulation(task: RolloutTask) -> list[TradeInfo]:
+    """Execute a single market simulation according to the provided task parameters.
+
+    Sets up the market exchange, agents, and simulation environment, then runs
+    the simulation from start to end time.
+
+    Args:
+        task: Configuration parameters for the simulation run
+
+    Returns:
+        list[TradeInfo]: Collection of trade information generated during simulation
+    """
     exchange_config = create_exchange_config_without_call_auction(
         market_open=task.start_time,
         market_close=task.end_time,
@@ -66,10 +98,13 @@ def run_rollout_task(task: RolloutTask) -> list[TradeInfo]:
     )
     exchange = Exchange(exchange_config)
 
+    # Set up the converter and model client for the background agent
     converter_dir = Path(C.directory.input_root_dir) / C.order_model.converter_dir
     converter = Converter(converter_dir)
     model_client = ModelClient(model_name=C.model_serving.model_name, ip=C.model_serving.ip, port=C.model_serving.port)
-    init_agent = get_agent_for_init_state(
+
+    # Create agents for different simulation phases
+    init_agent = create_initialization_agent(
         symbol=task.symbol,
         seed=task.seed_for_init_state,
         start_time=task.start_time,
@@ -83,6 +118,8 @@ def run_rollout_task(task: RolloutTask) -> list[TradeInfo]:
         model_client=model_client,
         init_agent=init_agent,
     )
+
+    # Register simulation states
     exchange.register_state(
         OrderState(
             num_max_orders=C.order_model.seq_len,
@@ -93,33 +130,70 @@ def run_rollout_task(task: RolloutTask) -> list[TradeInfo]:
         )
     )
     exchange.register_state(TradeInfoState())
+
+    # Configure and run the simulation environment
     env = Env(exchange=exchange, description=f"{task.rollout_index}th rollout task")
     env.register_agent(init_agent)
     env.register_agent(bg_agent)
     env.push_events(create_exchange_events(exchange_config))
+
+    # Execute simulation steps
     for observation in env.env():
         action = observation.agent.get_action(observation)
         env.step(action)
-    trade_infos: list[TradeInfo] = get_trade_infos(exchange, task.symbol, task.start_time, task.end_time)
-    logging.info(f"Get {len(trade_infos)} trade infos from {task.rollout_index}th simulation.")
+
+    # Extract and return trade information
+    trade_infos: list[TradeInfo] = extract_trade_information(exchange, task.symbol, task.start_time, task.end_time)
+    logging.info(f"Got {len(trade_infos)} trade infos from {task.rollout_index}th simulation.")
     return trade_infos
 
 
-def try_run_rollout_task(task: RolloutTask) -> list[TradeInfo]:
-    """Try to run a rollout task."""
+def execute_simulation_with_error_handling(task: RolloutTask) -> list[TradeInfo]:
+    """Execute a simulation with error handling to prevent process crashes.
+
+    Wraps the main simulation execution function with exception handling to ensure
+    the overall batch process continues even if individual simulations fail.
+
+    Args:
+        task: Configuration parameters for the simulation run
+
+    Returns:
+        list[TradeInfo]: Collection of trade information or empty list on error
+    """
     try:
-        return run_rollout_task(task)
+        return execute_single_simulation(task)
     except Exception as _:
         logging.exception(f"Error in {task.rollout_index}th rollout task.")
         return []
 
 
-def run_simulation(num_rollouts: int, rollouts_path: Path, seed_for_init_state: int) -> None:
-    """Run simulation with noise agent."""
-    symbol: str = "000000"
-    start_time = Timestamp("2024-01-01 09:30:00")
-    init_end_time = Timestamp("2024-01-01 10:00:00")
-    end_time = Timestamp("2024-01-01 10:05:00")
+def run_simulation(
+    symbol: str,
+    start_time: Timestamp,
+    init_end_time: Timestamp,
+    end_time: Timestamp,
+    num_rollouts: int,
+    rollouts_path: Path,
+    seed_for_init_state: int,
+) -> None:
+    """Run multiple market simulations and save the results.
+
+    Creates and executes multiple simulation tasks, potentially in parallel,
+    and saves the aggregated results to a compressed file.
+
+    Args:
+        symbol: Market symbol identifier
+        start_time: When the simulation begins
+        init_end_time: When initialization phase ends
+        end_time: When the simulation ends
+        num_rollouts: Number of simulation repetitions to run
+        rollouts_path: Path where simulation results will be saved
+        seed_for_init_state: Random seed for initialization phase
+
+    Returns:
+        None
+    """
+    # Create task configurations for each rollout
     tasks = [
         RolloutTask(
             rollout_index=i,
@@ -131,18 +205,34 @@ def run_simulation(num_rollouts: int, rollouts_path: Path, seed_for_init_state: 
         )
         for i in range(num_rollouts)
     ]
+
+    # Execute tasks sequentially in debug mode or in parallel otherwise
     if C.debug.enable:
-        results = [run_rollout_task(task) for task in tasks]
+        results = [execute_single_simulation(task) for task in tasks]
     else:
         with Pool(processes=16) as pool:
-            results = pool.map(try_run_rollout_task, tasks)
+            results = pool.map(execute_simulation_with_error_handling, tasks)
 
+    # Save simulation results
     pkl_utils.save_pkl_zstd(results, rollouts_path)
     logging.info(f"Saved {len(results)} rollouts to {rollouts_path}")
 
 
-def get_trade_infos(exchange: Exchange, symbol: str, start_time: Timestamp, end_time: Timestamp) -> list[TradeInfo]:
-    """Get trade infos from TradeInfoState."""
+def extract_trade_information(exchange: Exchange, symbol: str, start_time: Timestamp, end_time: Timestamp) -> list[TradeInfo]:
+    """Extract trade information from a completed simulation.
+
+    Retrieves trade data from the exchange's TradeInfoState and filters it
+    to the specified time range.
+
+    Args:
+        exchange: The exchange instance containing simulation states
+        symbol: Market symbol to extract data for
+        start_time: Beginning of time range for filtering
+        end_time: End of time range for filtering
+
+    Returns:
+        list[TradeInfo]: Filtered trade information records
+    """
     state = exchange.states()[symbol][TradeInfoState.__name__]
     assert isinstance(state, TradeInfoState)
     trade_infos = state.trade_infos
@@ -150,11 +240,25 @@ def get_trade_infos(exchange: Exchange, symbol: str, start_time: Timestamp, end_
     return trade_infos
 
 
-def plot_price_curves(rollouts: list[list[TradeInfo]], path: Path) -> None:
-    """Plot price curves."""
+def visualize_price_data(rollouts: list[list[TradeInfo]], path: Path) -> None:
+    """Visualize price data from simulation rollouts.
+
+    Creates a plot showing price trends across multiple simulation runs,
+    with median values and uncertainty bands. The visualization includes
+    information about agent types and saves the result as an image.
+
+    Args:
+        rollouts: List of lists containing TradeInfo objects from multiple simulation runs
+        path: Location to save the generated visualization
+
+    Returns:
+        None
+    """
     if not rollouts:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Extract and format price data from simulation results
     prices = []
     for i, trade_infos in enumerate(rollouts):
         prices.extend(
@@ -169,15 +273,18 @@ def plot_price_curves(rollouts: list[list[TradeInfo]], path: Path) -> None:
                 if x.lob_snapshot.last_price > 0
             ]
         )
-    # group by 1 minute
+
+    # Aggregate data by minute for temporal analysis
     price_data = pd.DataFrame(prices)
     price_data["Minute"] = price_data["Time"].dt.floor("min")
     price_data = price_data.drop(columns=["Time"])
     price_data = price_data.groupby(["Minute", "Rollout", "Agent"]).mean().reset_index()
+
+    # Configure visualization style
     sns.set_style("darkgrid")
     fig, ax = plt.subplots(figsize=(6, 4))
 
-    # calculate the median and standard deviation for each minute
+    # Calculate statistical aggregates for visualization
     price_data = (
         price_data.groupby(["Minute", "Agent"])
         .agg(
@@ -186,12 +293,16 @@ def plot_price_curves(rollouts: list[list[TradeInfo]], path: Path) -> None:
         )
         .reset_index()
     )
+
+    # Create line plot of median prices
     sns.lineplot(
         x="Minute",
         y="median_price",
         data=price_data,
         ax=ax,
     )
+
+    # Add standard deviation bands for uncertainty visualization
     ax.fill_between(
         price_data["Minute"],
         price_data["median_price"] - price_data["std_price"],  # type: ignore
@@ -200,7 +311,10 @@ def plot_price_curves(rollouts: list[list[TradeInfo]], path: Path) -> None:
         color="orange",
     )
 
+    # Add scatter points to show agent-specific data
     sns.scatterplot(x="Minute", y="median_price", data=price_data, hue="Agent", ax=ax)
+
+    # Format x-axis to show time properly
     ax.xaxis.set_major_formatter(dates.DateFormatter("%H:%M"))
     ax.set_title("Simulated Rollouts")
     fig.tight_layout()
@@ -210,21 +324,38 @@ def plot_price_curves(rollouts: list[list[TradeInfo]], path: Path) -> None:
 
 
 def visualize_rollouts(rollouts_path: Path) -> None:
-    """Visualize rollouts."""
+    """Load simulation results and create visualizations.
+
+    This function loads serialized rollout data from a file and passes it
+    to the visualization function. It ensures the file exists before proceeding.
+
+    Args:
+        rollouts_path: Path to the serialized rollout data file
+
+    Returns:
+        None
+    """
     if not rollouts_path.exists():
         return
     rollouts = pkl_utils.load_pkl_zstd(rollouts_path)
-    plot_price_curves(rollouts, rollouts_path.with_suffix(".png"))
+    visualize_price_data(rollouts, rollouts_path.with_suffix(".png"))
 
 
 if __name__ == "__main__":
+    # Set up output directory for simulation results
     output_dir = Path(C.directory.output_root_dir) / "forecasting-example"
     output_dir.mkdir(parents=True, exist_ok=True)
     num_rollouts = 2
+
+    # Run multiple simulations with different seeds and configurations
     for seed in range(10):
         for run in range(2):
             rollouts_path = output_dir / f"rollouts-seed{seed}-run{run}.zstd"
             run_simulation(
+                symbol="000000",
+                start_time=Timestamp("2024-01-01 09:30:00"),
+                init_end_time=Timestamp("2024-01-01 10:00:00"),
+                end_time=Timestamp("2024-01-01 10:05:00"),
                 num_rollouts=num_rollouts,
                 rollouts_path=rollouts_path,
                 seed_for_init_state=seed,
