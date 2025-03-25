@@ -58,7 +58,7 @@ def test_model_client() -> None:
     Prerequisites:
         - Model server must be running and accessible at the configured IP and port
         - Model should be configured with minimal temperature to ensure deterministic outputs
-          (e.g., export MODEL_SERVING__TEMPERATURE=0.00001 && bash scripts/start-model-serving.sh)
+          (e.g., `export MODEL_SERVING__TEMPERATURE=0.00001 && bash scripts/start-order-model.sh`)
     """
     from pathlib import Path
 
