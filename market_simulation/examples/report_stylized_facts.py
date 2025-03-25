@@ -1,25 +1,21 @@
-"""Stylized facts of Cont.
+"""Stylized Facts Analysis of Financial Markets.
 
-- 1. Absence of autocorrelations: corr(r(t, delta_t), r(t+tau, delta_t))
-- 2. Heavy tails: kurtosis of returns.
-- 3. Gain/loss asymmetry: skews of returns.
-- 4. Aggregational Gaussianity: kurtosis of returns.
-- 5. Intermittency: Fano factor.
-- 6. Volatility clustering: corr(|r(t, delta_t)|, |r(t+tau, delta_t)|)
-- 7. Conditional heavy tails: kurtosis of returns, need normalization.
-- 8. Slow decay of autocorrelation in absolute returns: similar to volatility clustering.
-- 9. Leverage effect: corr(r(t, delta_t), |r(t+tau, delta_t)|)
-- 10. Volume/volatility correlation: corr(v(t, delta_t), r(t, delta_t))
-- 11. Asymmetry in timescales: coarse grain and fine grain returnn correlation.
+This module implements and visualizes the stylized facts described by Rama Cont for comparing
+simulated market data with historical data. The stylized facts include:
 
-Information needed to generate these stylized facts:
-- r(t, delta_t), delta_t = 1, ..., 20,
-    - for above return information, we keep both return of last trade and return of average trade.
-    - keep symbol information.
-    - simulation start time
-- volume for delta_t = 1, ..., 20
+1. Absence of autocorrelations: corr(r(t, delta_t), r(t+tau, delta_t))
+2. Heavy tails: kurtosis of returns.
+3. Gain/loss asymmetry: skews of returns.
+4. Aggregational Gaussianity: kurtosis of returns.
+5. Intermittency: Fano factor.
+6. Volatility clustering: corr(|r(t, delta_t)|, |r(t+tau, delta_t)|)
+7. Conditional heavy tails: kurtosis of returns, need normalization.
+8. Slow decay of autocorrelation in absolute returns: similar to volatility clustering.
+9. Leverage effect: corr(r(t, delta_t), |r(t+tau, delta_t)|)
+10. Volume/volatility correlation: corr(v(t, delta_t), r(t, delta_t))
+11. Asymmetry in timescales: coarse grain and fine grain returnn correlation.
 
-Reference paper:
+References:
 - http://rama.cont.perso.math.cnrs.fr/pdf/empirical.pdf
 - https://arxiv.org/abs/2311.07738
 """
@@ -38,6 +34,7 @@ from matplotlib.figure import Figure
 from pandas import Timestamp
 from tqdm import tqdm
 
+from market_simulation.conf import C
 from market_simulation.utils import pkl_utils
 from mlib.core.lob_snapshot import LobSnapshot
 from mlib.core.trade_info import TradeInfo
@@ -80,7 +77,7 @@ AX_TICK_20 = [0, *list(range(2, 21, 2))]
 
 
 class MinuteInfo(NamedTuple):
-    """Minute Info."""
+    """Stores price and volume information for a one-minute interval."""
 
     time: Timestamp
     price_last: float
@@ -88,11 +85,10 @@ class MinuteInfo(NamedTuple):
     price_mid: float
     price_mid_last: float
     volume: float
-    num_orders: int
 
 
 class RolloutInfo(NamedTuple):
-    """Rollout Info."""
+    """Stores market simulation and replay data for comparison."""
 
     symbol: str
     start_time: Timestamp
@@ -101,15 +97,31 @@ class RolloutInfo(NamedTuple):
 
 
 def save_and_close_fig(fig: Figure, output_path: Path, dpi: int = 300) -> None:
-    """Save and close figure."""
+    """Save figure to file and close it.
+
+    Args:
+        fig: The matplotlib figure to save
+        output_path: Path where the figure will be saved
+        dpi: Resolution of the saved figure
+    """
     fig.tight_layout()
     fig.savefig(str(output_path), dpi=dpi)
     plt.close(fig)
     logging.info(f"Saved to {output_path}.")
 
 
-def cal_log_return(minutes: list[MinuteInfo], start_minute: int, end_minute: int, price_type: PriceType) -> float:
-    """Calculate log return."""
+def calculate_log_return(minutes: list[MinuteInfo], start_minute: int, end_minute: int, price_type: PriceType) -> float:
+    """Calculate logarithmic return between two time points.
+
+    Args:
+        minutes: List of minute-by-minute price data
+        start_minute: Starting time index
+        end_minute: Ending time index
+        price_type: Type of price to use (last or mean)
+
+    Returns:
+        Logarithmic return value
+    """
     assert 0 <= start_minute < end_minute < len(minutes)
     assert price_type in ["last", "mean"]
     if price_type == "mean":
@@ -122,26 +134,46 @@ def cal_log_return(minutes: list[MinuteInfo], start_minute: int, end_minute: int
     return r
 
 
-def cal_coarse_return(minutes: list[MinuteInfo], start_minute: int, end_minute: int, price_type: PriceType) -> float:
-    """Calculate coarse return: abs(sum(return))."""
+def calculate_coarse_return(minutes: list[MinuteInfo], start_minute: int, end_minute: int, price_type: PriceType) -> float:
+    """Calculate coarse-grained return: absolute value of sum of returns.
+
+    Args:
+        minutes: List of minute-by-minute price data
+        start_minute: Starting time index
+        end_minute: Ending time index
+        price_type: Type of price to use (last or mean)
+
+    Returns:
+        Coarse-grained return value
+    """
     assert 0 <= start_minute < end_minute < len(minutes)
     returns = []
     for i in range(start_minute, end_minute):
         j = i + 1
-        ret = cal_log_return(minutes, i, j, price_type)
+        ret = calculate_log_return(minutes, i, j, price_type)
         returns.append(ret)
 
     ret = np.abs(np.sum(returns))
     return ret
 
 
-def cal_fine_return(minutes: list[MinuteInfo], start_minute: int, end_minute: int, price_type: PriceType) -> float:
-    """Calculate fine return: sum(abs(return))."""
+def calculate_fine_return(minutes: list[MinuteInfo], start_minute: int, end_minute: int, price_type: PriceType) -> float:
+    """Calculate fine-grained return: sum of absolute returns.
+
+    Args:
+        minutes: List of minute-by-minute price data
+        start_minute: Starting time index
+        end_minute: Ending time index
+        price_type: Type of price to use (last or mean)
+
+    Returns:
+        Fine-grained return value
+    """
     assert 0 <= start_minute < end_minute < len(minutes)
     returns = []
     for i in range(start_minute, end_minute):
         j = i + 1
-        ret = cal_log_return(minutes, i, j, price_type)
+        ret = calculate_log_return(minutes, i, j, price_type)
         returns.append(np.abs(ret))
 
     ret = np.sum(returns)
@@ -149,7 +181,15 @@ def cal_fine_return(minutes: list[MinuteInfo], start_minute: int, end_minute: in
 
 
 def get_minute_info(trade_infos: list[TradeInfo], start_lob: LobSnapshot) -> list[MinuteInfo]:
-    """Get minute info."""
+    """Aggregate trade information into minute-by-minute data.
+
+    Args:
+        trade_infos: List of individual trade information
+        start_lob: Initial limit order book snapshot
+
+    Returns:
+        List of aggregated minute information
+    """
     infos = []
     last_price = start_lob.last_price
     for trade_info in trade_infos:
@@ -174,7 +214,6 @@ def get_minute_info(trade_infos: list[TradeInfo], start_lob: LobSnapshot) -> lis
             price_mid_last=("mid_price", "last"),
             price_last=("price", "last"),
             volume=("volume", "sum"),
-            num_orders=("price", "count"),
         )
         .reset_index()
     )
@@ -189,14 +228,20 @@ def get_minute_info(trade_infos: list[TradeInfo], start_lob: LobSnapshot) -> lis
                 price_mid=row.price_mid,
                 price_mid_last=row.price_mid_last,
                 volume=row.volume,
-                num_orders=row.num_orders,
             )
         )
     return minutes
 
 
 def get_rollout_info(path: Path) -> RolloutInfo | None:
-    """Get RolloutInfo from trade infos for both replay and simulation."""
+    """Create RolloutInfo from trade information for both replay and simulation data.
+
+    Args:
+        path: Path to the file containing trade information
+
+    Returns:
+        RolloutInfo object containing simulation and replay data, or None if data is invalid
+    """
     rollouts: list[tuple[list[TradeInfo], LobSnapshot]] = pkl_utils.load_pkl_zstd(path)
     assert rollouts[0] is not None
     replay_trade_infos, _ = rollouts[0]  # real replay
@@ -230,7 +275,18 @@ def get_return_info(
     *,
     need_coarse_fine_info: bool = False,
 ) -> pd.DataFrame:
-    """Get return info."""
+    """Extract return information for various time periods and lags.
+
+    Args:
+        rollout_infos: List of RolloutInfo objects
+        delta_ts: List of time periods for return calculation
+        taus: List of lag periods
+        price_type: Type of price to use (last or mean)
+        need_coarse_fine_info: Whether to include coarse and fine-grained return info
+
+    Returns:
+        DataFrame containing return information
+    """
     infos = []
     for rollout_info in tqdm(rollout_infos, desc="Extracting return info."):
         symbol = rollout_info.symbol
@@ -250,8 +306,8 @@ def get_return_info(
                         if i_start + tau < 0:
                             continue
                         assert delta_t > 0
-                        r1 = cal_log_return(minutes, i_start, i_start + delta_t, price_type)
-                        r2 = cal_log_return(minutes, i_start + tau, i_start + tau + delta_t, price_type)
+                        r1 = calculate_log_return(minutes, i_start, i_start + delta_t, price_type)
+                        r2 = calculate_log_return(minutes, i_start + tau, i_start + tau + delta_t, price_type)
 
                         info = {
                             "symbol": symbol,
@@ -267,8 +323,8 @@ def get_return_info(
                         if need_coarse_fine_info:
                             info.update(
                                 {
-                                    "r1_fine": cal_fine_return(minutes, i_start, i_start + delta_t, price_type),
-                                    "r2_coarse": cal_coarse_return(minutes, i_start + tau, i_start + tau + delta_t, price_type),
+                                    "r1_fine": calculate_fine_return(minutes, i_start, i_start + delta_t, price_type),
+                                    "r2_coarse": calculate_coarse_return(minutes, i_start + tau, i_start + tau + delta_t, price_type),
                                 }
                             )
                         infos.append(info)
@@ -277,8 +333,17 @@ def get_return_info(
     return data
 
 
-def plot_cont1(rollout_infos: list[RolloutInfo], output_dir: Path, price_type: PriceType) -> None:
-    """Plot cont1. Absence of autocorrelations: corr(r(t, delta_t), r(t+tau, delta_t))."""
+def plot_return_autocorrelation(rollout_infos: list[RolloutInfo], output_dir: Path, price_type: PriceType) -> None:
+    """Plot Stylized Fact 1: Absence of autocorrelations between returns.
+
+    Analyzes the correlation between returns at different time points to verify
+    absence of significant autocorrelation.
+
+    Args:
+        rollout_infos: List of RolloutInfo objects
+        output_dir: Directory where output will be saved
+        price_type: Type of price to use (last or mean)
+    """
     max_tau = 10
     data = get_return_info(rollout_infos, delta_ts=[1], taus=list(range(1, max_tau + 1)), price_type=price_type)
     groups = data.groupby(["source", "lag", "symbol"])
@@ -312,10 +377,16 @@ def plot_cont1(rollout_infos: list[RolloutInfo], output_dir: Path, price_type: P
     save_and_close_fig(fig, fig_path)
 
 
-def plot_cont2(rollout_infos: list[RolloutInfo], output_dir: Path, price_type: PriceType) -> None:
-    """Plot cont2. Heavy tails: kurtosis of returns.
+def plot_return_kurtosis(rollout_infos: list[RolloutInfo], output_dir: Path, price_type: PriceType) -> None:
+    """Plot Stylized Facts 2 and 4: Heavy tails and aggregational Gaussianity.
 
-    NOTE: why not use last price: because it's not a unique peak -> there are actually 3 peaks.
+    Analyzes kurtosis of returns over different time scales to demonstrate
+    heavy-tailed distributions and their tendency toward normality at longer scales.
+
+    Args:
+        rollout_infos: List of RolloutInfo objects
+        output_dir: Directory where output will be saved
+        price_type: Type of price to use (last or mean)
     """
     max_delta_t = 20
     data = get_return_info(rollout_infos, delta_ts=list(range(1, max_delta_t + 1)), taus=[0], price_type=price_type)
@@ -362,8 +433,16 @@ def plot_cont2(rollout_infos: list[RolloutInfo], output_dir: Path, price_type: P
         save_and_close_fig(fig, fig_path)
 
 
-def plot_cont3(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
-    """Plot cont3. Gain/loss asymmetry: skews of returns."""
+def plot_return_skewness(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
+    """Plot Stylized Fact 3: Gain/loss asymmetry.
+
+    Analyzes skewness of returns to demonstrate the typical negative skew
+    (losses tend to be more extreme than gains).
+
+    Args:
+        rollout_infos: List of RolloutInfo objects
+        output_dir: Directory where output will be saved
+    """
     max_delta_t = 20
     data = get_return_info(rollout_infos, delta_ts=list(range(1, max_delta_t + 1)), taus=[0])
     data = data[(data["r1"] > -0.05) & (data["r1"] < 0.05)]  # filter outlier
@@ -382,8 +461,16 @@ def plot_cont3(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
     save_and_close_fig(fig, fig_path)
 
 
-def plot_cont5(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
-    """Plot cont5. Intermittency: Fano factor."""
+def plot_return_intermittency(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
+    """Plot Stylized Fact 5: Intermittency.
+
+    Analyzes the Fano factor (variance-to-mean ratio) of extreme returns to show
+    return bursts or clusters of volatility.
+
+    Args:
+        rollout_infos: List of RolloutInfo objects
+        output_dir: Directory where output will be saved
+    """
     data = get_return_info(rollout_infos, delta_ts=[1], taus=[0])
     data["r1_abs"] = np.abs(data["r1"])
     groups = data.groupby(["source", "symbol"])
@@ -412,8 +499,16 @@ def plot_cont5(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
     save_and_close_fig(fig, fig_path)
 
 
-def plot_cont6(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
-    """Plot cont5. Volatility clustering: corr(|r(t, delta_t)|, |r(t+tau, delta_t)|)."""
+def plot_volatility_clustering(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
+    """Plot Stylized Facts 6 and 8: Volatility clustering and slow decay of autocorrelation.
+
+    Analyzes the correlation between absolute returns at different time points to show
+    how volatility tends to cluster and persist over time.
+
+    Args:
+        rollout_infos: List of RolloutInfo objects
+        output_dir: Directory where output will be saved
+    """
     max_tau = 20
     data = get_return_info(rollout_infos, delta_ts=[1], taus=list(range(1, max_tau + 1)))
     data["r1_abs"] = np.abs(data["r1"])
@@ -438,8 +533,16 @@ def plot_cont6(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
     save_and_close_fig(fig, fig_path)
 
 
-def plot_cont7(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
-    """Plot cont7. Conditional heavy tails: kurtosis of returns."""
+def plot_conditional_heavy_tails(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
+    """Plot Stylized Fact 7: Conditional heavy tails.
+
+    Analyzes kurtosis of normalized returns to show that even after accounting for
+    volatility clustering, returns still exhibit heavy tails.
+
+    Args:
+        rollout_infos: List of RolloutInfo objects
+        output_dir: Directory where output will be saved
+    """
     max_delta_t = 20
     data = get_return_info(rollout_infos, delta_ts=list(range(1, max_delta_t + 1)), taus=[0])
     data = data[(data["r1"] > -0.5) & (data["r1"] < 0.5)]
@@ -490,8 +593,16 @@ def plot_cont7(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
         save_and_close_fig(fig, fig_path)
 
 
-def plot_cont9(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
-    """Plot cont9. Leverage effect: corr(r(t, delta_t), |r(t+tau, delta_t)|)."""
+def plot_leverage_effect(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
+    """Plot Stylized Fact 9: Leverage effect.
+
+    Analyzes the correlation between returns and future volatility to demonstrate
+    how negative returns tend to lead to higher future volatility.
+
+    Args:
+        rollout_infos: List of RolloutInfo objects
+        output_dir: Directory where output will be saved
+    """
     max_tau = 20
     data = get_return_info(rollout_infos, delta_ts=[1], taus=list(range(1, max_tau + 1)))
     data["r2_abs"] = np.abs(data["r2"])
@@ -516,8 +627,16 @@ def plot_cont9(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
     save_and_close_fig(fig, fig_path)
 
 
-def plot_cont10(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
-    """Plot cont10. Volume/volatility correlation: corr(v(t, delta_t), |r(t, delta_t)|)."""
+def plot_volume_volatility_correlation(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
+    """Plot Stylized Fact 10: Volume/volatility correlation.
+
+    Analyzes the correlation between trading volume and volatility to demonstrate
+    how high-volume periods tend to coincide with high volatility.
+
+    Args:
+        rollout_infos: List of RolloutInfo objects
+        output_dir: Directory where output will be saved
+    """
     max_tau = 20
     data = get_return_info(rollout_infos, delta_ts=[1], taus=list(range(1, max_tau + 1)))
     data["r2_abs"] = np.abs(data["r2"])
@@ -539,11 +658,19 @@ def plot_cont10(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
     save_and_close_fig(fig, fig_path)
 
 
-def plot_cont11(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
-    """Plot cont11. Asymmetry in timescales: coarse grain and fine grain returnn correlation."""
+def plot_timescale_asymmetry(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
+    """Plot Stylized Fact 11: Asymmetry in timescales.
+
+    Analyzes correlation between coarse and fine-grained returns to show
+    differences in behavior patterns at different timescales.
+
+    Args:
+        rollout_infos: List of RolloutInfo objects
+        output_dir: Directory where output will be saved
+    """
     data = get_return_info(rollout_infos, delta_ts=[5], taus=list(range(-10, 10 + 1)), need_coarse_fine_info=True)
     groups = data.groupby(["source", "lag", "symbol"])
-    corr = groups.apply(lambda x: x["r2_coarse"].corr(x["r1_fine"])).reset_index().rename(columns={0: "cf_corr"})
+    corr = groups.apply(lambda x: x["r2_coarse"].corr(x["r1_fine"])).reset_index().rename(columns={0: "cf_corr"})  # type: ignore
     logging.info(f"Correlation: {corr}")
     corr.to_csv(output_dir / "cont11.csv", index=False)
     fig, ax = plt.subplots(figsize=(3.5, 2.5), nrows=1, ncols=1)
@@ -565,8 +692,11 @@ def plot_cont11(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
 
     corr = corr.set_index(["source", "lag", "symbol"])
     diff_info = []
+    source: str
+    lag: int
+    symbol: str
     for idx, row_data in corr.iterrows():
-        source, lag, symbol = idx  # Unpack the multi-index tuple
+        source, lag, symbol = idx  # type: ignore
         if lag < 0:
             continue
         diff_info.append(
@@ -598,7 +728,15 @@ def plot_cont11(rollout_infos: list[RolloutInfo], output_dir: Path) -> None:
 
 
 def plot_data_distribution(rollouts: list[RolloutInfo], output_dir: Path) -> None:
-    """Plot date distribution."""
+    """Plot distribution of data across dates and symbols.
+
+    Visualizes the temporal and instrument distribution of the dataset
+    to provide context for the stylized facts analysis.
+
+    Args:
+        rollouts: List of RolloutInfo objects
+        output_dir: Directory where output will be saved
+    """
     total_count = len(rollouts)
     dates = [x.start_time.date() for x in rollouts]
     fig, ax = plt.subplots(figsize=(3.5, 2.5))
@@ -629,33 +767,65 @@ def plot_data_distribution(rollouts: list[RolloutInfo], output_dir: Path) -> Non
 
 
 def generate_stylized_facts(path: Path, output_dir: Path) -> None:
-    """Generate stylized facts."""
+    """Generate and save visualizations of all stylized facts.
+
+    This function loads rollout information from a file and creates visualizations for
+    each stylized fact, saving them to the specified output directory.
+
+    Args:
+        path: Path to the rollout information data file.
+        output_dir: Directory where visualization outputs will be saved.
+    """
     rollouts: list[RolloutInfo] = pkl_utils.load_pkl_zstd(path)
     output_dir.mkdir(parents=True, exist_ok=True)
     logging.info(f"Found {len(rollouts)} rollouts in {path}")
-    plot_cont1(rollouts, output_dir, price_type="last")
-    plot_cont1(rollouts, output_dir, price_type="mean")
-    plot_cont2(rollouts, output_dir, "last")
-    plot_cont3(rollouts, output_dir)
-    # # cont4: Aggregational Gaussianity: kurtosis of returns.
-    plot_cont5(rollouts, output_dir)
-    plot_cont6(rollouts, output_dir)
-    plot_cont7(rollouts, output_dir)
-    # # cont8: Slow decay of autocorrelation in absolute returns
-    plot_cont9(rollouts, output_dir)
-    plot_cont10(rollouts, output_dir)
-    plot_cont11(rollouts, output_dir)
+
+    # Absence of autocorrelations
+    plot_return_autocorrelation(rollouts, output_dir, price_type="last")
+    plot_return_autocorrelation(rollouts, output_dir, price_type="mean")
+
+    # Heavy tails
+    plot_return_kurtosis(rollouts, output_dir, "last")
+
+    # Gain/loss asymmetry
+    plot_return_skewness(rollouts, output_dir)
+
+    # Intermittency
+    plot_return_intermittency(rollouts, output_dir)
+
+    # Volatility clustering
+    plot_volatility_clustering(rollouts, output_dir)
+
+    # Conditional heavy tails
+    plot_conditional_heavy_tails(rollouts, output_dir)
+
+    # Note: Stylized fact #8 (slow decay of autocorrelation in absolute returns)
+    # is captured by the volatility clustering analysis in plot_volatility_clustering
+
+    # Leverage effect
+    plot_leverage_effect(rollouts, output_dir)
+
+    # Volume/volatility correlation
+    plot_volume_volatility_correlation(rollouts, output_dir)
+
+    # Asymmetry in timescales
+    plot_timescale_asymmetry(rollouts, output_dir)
+
+    # Dataset distribution characteristics
     plot_data_distribution(rollouts, output_dir)
 
 
 if __name__ == "__main__":
-    # Report Cont's 11 stylized facts from RolloutInfos.
-    # Note: this function turns RolloutInfos into stylized facts,
-    # you probably need to convert your trade infos to RolloutInfos first,
-    # which includes real historical data and we can not provide them due to data license.
-    # To get the RolloutInfos from trade infos, please check out the function `get_rollout_info` in this file.
+    """Generate stylized facts visualizations from rollout information.
 
-    rollout_info_path: Path = Path("/data/blob_root/mars-open/stylized-facts/rollout_info_25_minutes.zstd")
+    This script loads RolloutInfo data containing both simulated and historical market data,
+    then generates visualizations for all stylized facts defined by Cont.
+
+    Note: This function processes pre-formatted RolloutInfos. To convert raw trade data to RolloutInfos,
+    use the `get_rollout_info` function in this module. Historical trade info data is not provided due to
+    licensing restrictions.
+    """
+    rollout_info_path: Path = Path(C.directory.input_root_dir) / "stylized-facts/rollout_info_25_minutes.zstd"
     output_dir: Path = Path("./tmp/stylized-facts")
 
     generate_stylized_facts(rollout_info_path, output_dir)
