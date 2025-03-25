@@ -68,7 +68,7 @@ def plot_price_curves(trade_infos: list[TradeInfo], path: Path) -> None:
         if x.lob_snapshot.last_price > 0
     ]
     # group by 1 minute
-    price_data = pd.DataFrame(prices).groupby(pd.Grouper(key="Time", freq="1T")).mean().reset_index()
+    price_data = pd.DataFrame(prices).groupby(pd.Grouper(key="Time", freq="1min")).mean().reset_index()
     sns.set_style("darkgrid")
     fig, ax = plt.subplots(figsize=(5, 3))
     sns.lineplot(x="Time", y="Price", data=price_data, ax=ax)
