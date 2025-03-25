@@ -63,8 +63,6 @@ ignore = [
     "PERF401", # Use {message_str} to create a transformed list
     "S105",    # Possible hardcoded password assigned to: "{}"
     "FA100",   # Add from __future__ import annotations to simplify {name}
-    "ANN101",  # Missing type annotation for {name} in method
-    "ANN102",  # Missing type annotation for {name} in classmethod
     "TRY300",  # Consider moving this statement to an else block
     "LOG015",  # {}() call on root logger
     "ARG002",  # Unused method argument: {name}
