@@ -14,10 +14,17 @@ RUN DEBIAN_FRONTEND=noninteractive && \
     apt-get -y update && \
     apt-get -y install --no-install-recommends \
         build-essential \
-        cmake \
-        git \
         ca-certificates \
+        lsb-release \
+        software-properties-common \
+        ccache \
+        gdb \
+        cmake \
+        wget \
+        git \
         tmux \
+        tzdata \
+        openssh-client \
         curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -38,7 +45,7 @@ RUN curl -o miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-lates
     chmod +x miniconda.sh && \
     ./miniconda.sh -b -p /opt/conda && \
     rm miniconda.sh && \
-    /opt/conda/bin/conda install -y python=3.12 conda-build && \
+    /opt/conda/bin/conda install -y python=3.12 conda-build cython && \
     /opt/conda/bin/conda clean -ya
 
 # Add conda to PATH
