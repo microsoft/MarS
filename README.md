@@ -163,7 +163,7 @@ Several strategies can substantially improve inference performance for productio
 
 - **Advanced Serving System**: Replace the current Ray-based batch inference with more optimized systems like [vLLM](https://github.com/vllm-project/vllm) to achieve higher throughput and lower latency.
 
-- **Efficient Model Architectures**: While we currently use LLaMA for its reliability during testing, more efficient architectures like linear attention models (Mamba), Mixture of Experts (MoE), or Multi-head Latent Attention (MLA) could significantly improve performance.
+- **Efficient Model Architectures**: While we currently use LLaMA for its reliability during testing, exploring more efficient architectures such as linear attention models like RetNet and RWKV, state space models like Mamba, Mixture of Experts (MoE), or Multi-head Latent Attention (MLA) could significantly improve performance.
 
 - **Model Compression Techniques**: Implement quantization, distillation, and pruning to reduce model size and computational requirements while maintaining accuracy.
 
