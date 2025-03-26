@@ -20,9 +20,190 @@
 
 | **Event**                   | **Description**                                                                                              |
 |-----------------------------|-------------------------------------------------------------------------------------------------------------|
+| 📦 Model & Tools Release | We've released our LMM order model along with three powerful analytical tools: Stylized Facts Report, Market Forecast, and Market Impact Analysis! |
 | 🎈 ICLR 2025 Acceptance | We are thrilled to announce that our paper has been accepted to ICLR 2025! |
 | 🌐 Join Our Community   | Connect with us on 💬 [WeChat Group](doc/img/wechat_comm.jpg) and 👾 [Discord](https://discord.gg/jW8gKDDEqS) to share your feedback and insights! |
 | 🌟 First Release      | We are excited to announce our first release! Check out the repo and enjoy your journey.                  |
+
+## 📦 Release Overview
+
+We are proud to release our MarS order model, available at [HuggingFace/MarS](https://huggingface.co/microsoft), along with three powerful analytical tools that demonstrate the capabilities of our market simulation engine:
+
+1. **📊 Stylized Facts Report**: Evaluates 11 key market characteristics
+2. **📈 Market Forecast**: Predicts future market prices and trends
+3. **💹 Market Impact Analysis**: Assesses the market impact of trading strategies
+
+For each tool, we provide an interactive demo to help you understand its capabilities and potential applications. Please refer to our [paper](https://arxiv.org/abs/2409.07486) for detailed methodology and technical approaches.
+
+## 🖥️ Demo Usage & Notes
+
+To explore all of our demos in a user-friendly interface:
+
+```bash
+pip install streamlit==1.40.1
+streamlit run market_simulation/examples/demo/home_app.py
+```
+
+The demo applications are designed to provide a quick and visual understanding of each tool's capabilities. However, there are some important considerations:
+
+> **Data Limitations**: Due to commercial licensing restrictions on real order flow data, the demos use noise agents to generate initial phase data. For better results in your own applications, you can replace this with real order data if available.
+
+> **Using Demos vs Scripts**:
+> - If you want to quickly understand what these tools can do, run the Streamlit demos for an interactive experience.
+> - If you need to use these tools with your own data or in production, you'll need to modify the corresponding scripts (`report_stylized_facts.py`, `forecast.py`, `market_impact.py`) directly.
+
+The demos provide a user-friendly interface to experiment with different parameters and visualize results, while the scripts offer more flexibility for integration into your own workflows and data pipelines.
+
+### 📊 Stylized Facts Report
+
+The Stylized Facts Report evaluates 11 key market characteristics identified by [Cont (2001)](http://rama.cont.perso.math.cnrs.fr/pdf/empirical.pdf) to assess the realism of market simulations. These characteristics, known as "stylized facts," are empirical patterns consistently observed across different financial markets, instruments, and time periods.
+
+#### Stylized Facts Table:
+
+| Fact # | Fact Name                                | Historical | Simulated |
+|--------|------------------------------------------|------------|-----------|
+| 1      | Absence of autocorrelations              | ×          | ×         |
+| 2      | Heavy tails                              | ×          | ×         |
+| 3      | Gain/loss asymmetry                      |            |           |
+| 4      | Aggregational Gaussianity                | ×          | ×         |
+| 5      | Intermittency                            | ×          | ×         |
+| 6      | Volatility clustering                    | ×          | ×         |
+| 7      | Conditional heavy tails                  | ×          | ×         |
+| 8      | Slow decay of autocorrelation in absolute returns | × | × |
+| 9      | Leverage effect                          |            |           |
+| 10     | Volume/volatility correlation            | ×          | ×         |
+| 11     | Asymmetry in timescales                  | ×          | ×         |
+
+#### Key Results:
+- 9 out of 11 stylized facts are successfully reproduced in both historical and simulated data
+- The absent facts (Gain/loss asymmetry and Leverage effect) have also been noted as missing in modern US markets (Dow 30 stocks)
+- The simulated data shows similar patterns to historical data across all 11 facts
+
+#### Key Stylized Facts Examined:
+
+1. **Absence of autocorrelations**: Linear autocorrelations of asset returns quickly decay after short time intervals
+   - $\text{corr}(r(t, \Delta t), r(t+\tau, \Delta t))$
+
+2. **Heavy tails**: Return distributions display power-law or Pareto-like tails
+   - Measured through kurtosis of returns
+
+3. **Aggregational Gaussianity**: Return distributions become more normal as the time scale increases
+   - Kurtosis of returns approaches Gaussian levels at longer time scales
+
+4. **Intermittency**: High degree of variability in returns with irregular bursts
+   - Measured using Fano factor (variance-to-mean ratio) of extreme returns
+
+5. **Volatility clustering**: Positive autocorrelation in volatility measures, showing high-volatility events tend to cluster
+   - $\text{corr}(|r(t, \Delta t)|, |r(t+\tau, \Delta t)|)$
+
+6. **Conditional heavy tails**: Return distributions still exhibit heavy tails even after accounting for volatility clustering
+   - Kurtosis of normalized returns (divided by local volatility)
+
+7. **Slow decay of absolute return autocorrelation**: Absolute returns' autocorrelation decays slowly as a power law
+   - Similar to volatility clustering, measured across different lag periods
+
+8. **Volume/volatility correlation**: Trading volume correlation with volatility measures
+   - $\text{corr}(v(t, \Delta t), |r(t, \Delta t)|)$
+
+9. **Asymmetry in timescales**: Coarse-grained volatility predicts fine-scale volatility better than the reverse
+   - Correlation between coarse returns (absolute sum) and fine returns (sum of absolutes)
+
+Our methodology rigorously tests these facts using 11,591 simulated trajectories for the top 500 liquid stocks in the Chinese market, comparing simulation outputs against historical data.
+
+
+#### Usage:
+
+```bash
+python market_simulation/examples/report_stylized_facts.py
+```
+
+### 📈 Market Forecast
+
+The Market Forecast tool demonstrates the predictive capabilities of the MarS model by simulating future market prices and trends through order-level simulation rather than direct price prediction.
+
+#### Order-Level Trajectory Generation: A Paradigm Shift
+
+Traditional forecasting approaches attempt to directly model price movements based on historical data. Our approach is fundamentally different:
+
+1. **Order-Level Simulation**: Instead of predicting prices directly, MarS generates individual order events with their full properties (price, volume, direction)
+2. **Emergent Market Behavior**: Prices and trends emerge naturally from the interactions of these simulated orders
+3. **Multiple Possible Futures**: By running multiple simulations with the same starting conditions, we can explore the distribution of possible market outcomes
+
+This approach allows us to capture the rich, complex dynamics of real markets by modeling the fundamental units of market activity - orders themselves.
+
+#### Technical Approach:
+
+Following [Ntakaris (2018)](https://onlinelibrary.wiley.com/doi/10.1002/for.2543), we define the price change from time $t$ to $t+k$ minute as:
+
+$$l = \frac{\sum_{i=1}^{n} m_i / n - m_0}{m_0}$$
+
+Where:
+- $m_0$ is the mid-price at time $t$
+- $n$ is the number of orders between $t$ and $t+k$ minutes
+- $m_i$ is the mid-price after the $i$-th order event
+
+#### Usage:
+
+```bash
+python market_simulation/examples/forecast.py
+```
+
+#### Forecast Tool in Demo:
+<img src="doc/img/dashboard_forecast.png" alt="Market Forecast Dashboard" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);"><br>
+*Screenshot of the Forecast tool from the interactive demo dashboard*
+
+### 💹 Market Impact Analysis
+
+The Market Impact Analysis tool evaluates how trading strategies affect market prices and liquidity. This tool demonstrates how the MarS engine can be used to analyze the effects of trading activities on market dynamics in a controlled environment.
+
+#### Simulation-Based Impact Measurement: A Data-Driven Approach
+
+Market impact analysis examines how trading activity affects asset prices - one of the most important "What If" questions in finance. Traditional approaches rely on:
+- Strong theoretical assumptions
+- Simplified empirical formulas (like Square-Root-Law)
+- Costly and risky live trading experiments
+
+Our simulation-based approach offers significant advantages:
+
+1. **Controlled Experimentation**: Test trading strategies without real-world risk
+2. **Counterfactual Analysis**: Directly compare market behavior with and without a trading strategy
+3. **Parameter Exploration**: Test different execution parameters systematically
+4. **Realistic Market Reactions**: Capture how other market participants dynamically respond to your trading strategy
+
+#### Technical Implementation
+
+As implemented in `market_impact.py`, our approach:
+
+1. **Establishes a baseline**: First runs simulations without the trading strategy to establish normal market behavior
+   ```python
+   tasks = [RolloutTask(..., include_twap_agent=False, ...)]
+   ```
+
+2. **Measures market volume**: Calculates average trading volume during the simulation period
+   ```python
+   avg_volume = get_avg_volume(results, init_end_time, end_time)
+   target_volume = int(avg_volume * volume_ratio) // 100 * 100
+   ```
+
+3. **Introduces a trading strategy**: Adds a TWAP (Time-Weighted Average Price) agent with configurable parameters
+   ```python
+   trading_tasks = [RolloutTask(..., include_twap_agent=True, twap_agent_target_volume=target_volume, ...)]
+   ```
+
+4. **Analyzes the impact**: Compares price trajectories, execution quality, and market liquidity between baseline and strategy simulations
+
+The simulation process involves two distinct phases:
+- **Initialization Phase**: Establishing realistic starting market conditions
+- **Impact Analysis Phase**: Measuring how the TWAP strategy affects market dynamics
+
+#### Usage:
+
+```bash
+python market_simulation/examples/market_impact.py
+```
+#### Impact Analysis Tool in Demo:
+<img src="doc/img/dashboard_market_impact.png" alt="Market Impact Dashboard" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);"><br>
+*Screenshot of the Market Impact Analysis tool from the interactive demo dashboard*
 
 
 ## 📖 Introduction
