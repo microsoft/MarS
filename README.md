@@ -147,6 +147,30 @@ Where:
 python market_simulation/examples/forecast.py
 ```
 
+#### Prerequisites for Real-World Forecasting
+
+For production deployment of the forecasting tool, several important requirements must be met:
+
+- **Real Order-Level Data**: While our demo uses a noise agent to generate initial states, production-grade forecasting requires complete order-level historical data to accurately simulate future market behavior.
+
+- **Sufficient Computational Resources**: Our off-line research simulates 128 trajectories per state to generate robust forecasting signals. In our experiments, we utilized 128 GPUs running parallel simulations across different instruments and starting states.
+
+- **Optimized Inference Pipeline**: The current implementation prioritizes validating the model's scalability, realistic, interactive, and controllable order generation capabilities. For production deployment, significant inference optimizations are necessary, as detailed in the section below.
+
+#### Potential Improvements for Inference Performance
+
+Several strategies can substantially improve inference performance for production deployment:
+
+- **Advanced Serving System**: Replace the current Ray-based batch inference with more optimized systems like [vLLM](https://github.com/vllm-project/vllm) to achieve higher throughput and lower latency.
+
+- **Efficient Model Architectures**: While we currently use LLaMA for its reliability during testing, more efficient architectures like linear attention models (Mamba), Mixture of Experts (MoE), or Multi-head Latent Attention (MLA) could significantly improve performance.
+
+- **Model Compression Techniques**: Implement quantization, distillation, and pruning to reduce model size and computational requirements while maintaining accuracy.
+
+- **KV-Cache Optimization**: Our current implementation uses fixed-length sequences with sliding windows, making KV-cache implementation not applicable. Our preliminary experiments show that KV-cache can improve inference speed by 5-10x, making this a high-priority optimization target.
+
+- **Multi-Token Prediction**: Generating multiple tokens simultaneously instead of one-by-one order generation could substantially reduce inference time.
+
 #### Forecast Tool in Demo:
 <img src="doc/img/dashboard_forecast.png" alt="Market Forecast Dashboard" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);"><br>
 *Screenshot of the Forecast tool from the interactive demo dashboard*
