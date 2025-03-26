@@ -153,7 +153,7 @@ For production deployment of the forecasting tool, several important requirement
 
 - **Real Order-Level Data**: While our demo uses a noise agent to generate initial states, production-grade forecasting requires complete order-level historical data to accurately simulate future market behavior.
 
-- **Sufficient Computational Resources**: Our off-line research simulates 128 trajectories per state to generate robust forecasting signals. In our experiments, we utilized 128 GPUs running parallel simulations across different instruments and starting states.
+- **Sufficient Computational Resources**: Our offline research simulates 128 trajectories per state to generate robust forecasting signals. In our experiments, we utilized 128 GPUs running parallel simulations across different instruments and starting states.
 
 - **Optimized Inference Pipeline**: The current implementation prioritizes validating the model's scalability, realistic, interactive, and controllable order generation capabilities. For production deployment, significant inference optimizations are necessary, as detailed in the section below.
 
