@@ -9,7 +9,7 @@
     <img src="https://img.shields.io/badge/build-pass-green" alt="build">
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT">
     <img src="https://img.shields.io/badge/version-1.0.0-blue" alt="version">
-    <img src="https://img.shields.io/badge/python-3.8%20|%203.9-blue" alt="python">
+    <img src="https://img.shields.io/badge/python-3.11%20|%203.12-blue" alt="python">
     <img src="https://img.shields.io/badge/platform-linux%20-lightgrey" alt="platform">
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome">
     <img src="https://img.shields.io/badge/docs-latest-brightgreen" alt="documentation">
@@ -40,7 +40,6 @@ For each tool, we provide an interactive demo to help you understand its capabil
 To explore all of our demos in a user-friendly interface:
 
 ```bash
-pip install streamlit==1.40.1
 streamlit run market_simulation/examples/demo/home_app.py
 ```
 
