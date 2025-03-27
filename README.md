@@ -37,7 +37,7 @@ For each tool, we provide an interactive demo to help you understand its capabil
 
 ### 🖥️ Usage & Notes
 
-To explore all of our demos in a user-riendly interface:
+To explore all of our demos in a user-friendly interface:
 
 ```bash
 streamlit run market_simulation/examples/demo/home_app.py
@@ -69,7 +69,7 @@ Several strategies can substantially improve inference performance for productio
 
 - **Model Compression**: Implement quantization, distillation, and pruning to reduce model size and computational requirements while maintaining accuracy.
 
-- **KV-Cache Optimization**: Our current implementation uses fixed-length sequences with sliding windows. Implementing KV-cache could improve inference speed by 5-10x based on our preliminary experiments.
+- **KV-Cache Optimization**: Our current implementation uses fixed-length sequences with sliding windows, making KV-cache implementation not applicable. Implementing KV-cache could improve inference speed by 5-10x based on our preliminary experiments.
 
 - **Multi-Token Prediction**: Generating multiple tokens simultaneously instead of one-by-one order generation could substantially reduce inference time.
 
