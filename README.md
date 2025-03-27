@@ -9,7 +9,7 @@
     <img src="https://img.shields.io/badge/build-pass-green" alt="build">
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT">
     <img src="https://img.shields.io/badge/version-1.0.0-blue" alt="version">
-    <img src="https://img.shields.io/badge/python-3.8%20|%203.9-blue" alt="python">
+    <img src="https://img.shields.io/badge/python-3.11%20|%203.12-blue" alt="python">
     <img src="https://img.shields.io/badge/platform-linux%20-lightgrey" alt="platform">
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome">
     <img src="https://img.shields.io/badge/docs-latest-brightgreen" alt="documentation">
@@ -35,22 +35,43 @@ We are proud to release our MarS order model, available at [HuggingFace/MarS](ht
 
 For each tool, we provide an interactive demo to help you understand its capabilities and potential applications. Please refer to our [paper](https://arxiv.org/abs/2409.07486) for detailed methodology and technical approaches.
 
-## 🖥️ Demo Usage & Notes
+### 🖥️ Usage & Notes
 
 To explore all of our demos in a user-friendly interface:
 
 ```bash
-pip install streamlit==1.40.1
 streamlit run market_simulation/examples/demo/home_app.py
 ```
 
 The demo applications are designed to provide a quick and visual understanding of each tool's capabilities. However, there are some important considerations:
 
-> **Data Limitations**: Due to commercial licensing restrictions on real order flow data, the demos use noise agents to generate initial phase data. For better results in your own applications, you can replace this with real order data if available.
-
 > **Using Demos vs Scripts**:
 > - If you want to quickly understand what these tools can do, run the Streamlit demos for an interactive experience.
 > - If you need to use these tools with your own data or in production, you'll need to modify the corresponding scripts (`report_stylized_facts.py`, `forecast.py`, `market_impact.py`) directly.
+
+#### 🔧Production Deployment Prerequisites
+
+For production deployment of these tools, several important requirements must be met:
+
+- **Real Order-Level Data**: While our demos use noise agents to generate initial states, production-grade applications require complete order-level historical data to accurately simulate market behavior.
+
+- **Sufficient Computational Resources**: Our research simulations typically run 128 trajectories per state to generate robust signals. In our experiments, we utilized 128 GPUs running parallel simulations across different instruments and starting states.
+
+- **Optimized Inference Pipeline**: The current implementation prioritizes validating the model's scalability, realistic, interactive, and controllable order generation capabilities. For production deployment, significant optimizations are necessary.
+
+#### ⚡Performance Optimization Strategies
+
+Several strategies can substantially improve inference performance for production deployment:
+
+- **Advanced Serving System**: Replace the current Ray-based batch inference with more optimized systems like [vLLM](https://github.com/vllm-project/vllm) to achieve higher throughput and lower latency.
+
+- **Efficient Model Architectures**: While we currently use LLaMA for its reliability during testing, exploring more efficient architectures such as linear attention models (RetNet, RWKV), state space models (Mamba), Mixture of Experts (MoE), or Multi-head Latent Attention (MLA) could significantly improve performance.
+
+- **Model Compression**: Implement quantization, distillation, and pruning to reduce model size and computational requirements while maintaining accuracy.
+
+- **KV-Cache Optimization**: Our current implementation uses fixed-length sequences with sliding windows, making KV-cache implementation not applicable. Implementing KV-cache could improve inference speed by 5-10x based on our preliminary experiments.
+
+- **Multi-Token Prediction**: Generating multiple tokens simultaneously instead of one-by-one order generation could substantially reduce inference time.
 
 The demos provide a user-friendly interface to experiment with different parameters and visualize results, while the scripts offer more flexibility for integration into your own workflows and data pipelines.
 
