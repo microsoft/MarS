@@ -49,7 +49,7 @@ The demo applications are designed to provide a quick and visual understanding o
 > - If you want to quickly understand what these tools can do, run the Streamlit demos for an interactive experience.
 > - If you need to use these tools with your own data or in production, you'll need to modify the corresponding scripts (`report_stylized_facts.py`, `forecast.py`, `market_impact.py`) directly.
 
-#### Production Deployment Prerequisites
+#### 🔧Production Deployment Prerequisites
 
 For production deployment of these tools, several important requirements must be met:
 
@@ -59,7 +59,7 @@ For production deployment of these tools, several important requirements must be
 
 - **Optimized Inference Pipeline**: The current implementation prioritizes validating the model's scalability, realistic, interactive, and controllable order generation capabilities. For production deployment, significant optimizations are necessary.
 
-#### Performance Optimization Strategies
+#### ⚡Performance Optimization Strategies
 
 Several strategies can substantially improve inference performance for production deployment:
 
