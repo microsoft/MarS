@@ -44,9 +44,6 @@ class OrderTokenizer(nn.Module):
         batch_size = features.size(0)
         assert features.size(1) == self.num_max_orders * self.dim_order
         features = features.reshape((batch_size, self.num_max_orders, self.dim_order))
-        # normalize chg_to_open and time_to_open with first order in sequence
-        features[:, :, 3] = features[:, :, 3] - features[:, 0, 3].unsqueeze(1)
-        features[:, :, 4] = features[:, :, 4] - features[:, 0, 4].unsqueeze(1)
         features = features.reshape((batch_size * self.num_max_orders, self.dim_order))
         (order_type, price_level, pred_order_volume, order_interval) = self.split_order_index(
             features[:, 0],
