@@ -7,7 +7,9 @@ ENV_NESTED_DELIMITER = "__"
 class ModelServing(BaseModel):
     """Config for model serving."""
 
-    model_path: str = "order-model/20240423-0939-model-scaling-llama2-order-time-mid-rel-LOB-24-1024-16-0.0004.6.904300212860107.ckpt"
+    model_path: str = "order-model/order-time-mid-LOB-24-1024-16.zstd"
+    repo_id: str = "Don-Don/mars-order-model"
+    hf_token: str = ""  # NOTE: Please set your own token here
     model_name: str = "order-model"
     temperature: float = 1.0
     ip: str = "localhost"

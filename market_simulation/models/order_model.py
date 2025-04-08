@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import torch
+from huggingface_hub import PyTorchModelHubMixin
 from torch import Tensor, nn
 from transformers import LlamaConfig, LlamaForCausalLM
 
 
-class OrderTokenizer(nn.Module):
+class OrderTokenizer(nn.Module, PyTorchModelHubMixin):
     """Order tokenizer."""
 
     def __init__(
@@ -82,7 +83,7 @@ class OrderTokenizer(nn.Module):
         return (order_type, price_level, pred_order_volume, order_interval)
 
 
-class OrderModel(nn.Module):
+class OrderModel(nn.Module, PyTorchModelHubMixin):
     """Multi-granulairty model."""
 
     def __init__(

@@ -1,3 +1,11 @@
+---
+license: mit
+tags:
+- finance
+- market_simulation
+paper:
+- https://arxiv.org/abs/2409.07486
+---
 # Model Card for MarS Order Model
 
 A cutting-edge financial market simulation engine powered by the Large Market Model (LMM), designed to generate realistic, interactive, and controllable order sequences for market simulation.
@@ -10,80 +18,107 @@ A cutting-edge financial market simulation engine powered by the Large Market Mo
 # Clone the repository
 git clone https://github.com/microsoft/MarS-Model-Release.git
 cd MarS-Model-Release
-
 # Install dependencies
 pip install -e .[dev]
 ```
 
-### Download Model
+### Download and Load Model
 
-The model is available on Hugging Face Hub. You can download it using:
+The model is available on Hugging Face Hub. You can download and load it using:
 
 ```python
-from huggingface_hub import hf_hub_download
-from market_simulation.models.hf_wrapper.upload_model import MarsOrderModel
-
-# Download model files
-model_path = hf_hub_download(
-    repo_id="microsoft/mars-order-model",
-    filename="pytorch_model.bin",
-    token="<your_hf_token>"  # Required for downloading
-)
-
-# Download tokenizer config
-tokenizer_config_path = hf_hub_download(
-    repo_id="microsoft/mars-order-model",
-    filename="tokenizer_config.json",
+from market_simulation.models.order_model import OrderModel
+from market_simulation.conf import C
+# Load model directly from Hugging Face Hub
+model = OrderModel.from_pretrained(
+    C.model_serving.repo_id,
     token="<your_hf_token>"
 )
 ```
 
-### Basic Usage
+### Starting the Order Model Ray Server
 
-```python
-import torch
-from market_simulation.models.hf_wrapper.upload_model import MarsOrderModel
+MarS uses [Ray Serve](https://docs.ray.io/en/latest/serve/index.html) to deploy the order model as a scalable, production-ready service. Ray Serve is a scalable model serving framework built on Ray that makes it easy to deploy ML models in production.
 
-# Initialize model
-model = MarsOrderModel(
-    emb_dim=1024,
-    num_layers=24,
-    num_heads=16,
-    num_bins_price_level=32,
-    num_bins_pred_order_volume=32,
-    num_bins_order_interval=16,
-    num_max_orders=200,
-    dropout=0.1,
-)
-
-# Load model weights
-model.load_state_dict(torch.load(model_path))
-model.eval()
-
-# Generate orders
-with torch.no_grad():
-    # Your input features should be a tensor of shape [batch_size, num_max_orders * 15]
-    # where 15 is the dimension of order features
-    features = torch.randn(1, 200 * 15)  # Example input
-    logits = model(features)
-
-    # Sample orders
-    orders = model.sample(features, temperature=1.0)
-```
-
-### Interactive Demo
-
-For a quick start with the interactive demo:
+To start the order model Ray server:
 
 ```bash
-# Run the Streamlit demo
-streamlit run market_simulation/examples/demo/home_app.py
+# Run the start script
+bash scripts/start-order-model.sh
 ```
 
-This will launch a web interface where you can:
-1. View Stylized Facts Report
-2. Generate Market Forecasts
-3. Analyze Market Impact
+This script will:
+
+1. Stop any existing Ray cluster
+2. Start a new Ray cluster with a head node
+3. Deploy the order model service using the configuration in `ray_serving.yaml`
+4. Display the status of the deployed service
+
+Once the server is running, you can use the `ModelClient` to interact with it:
+
+```python
+from market_simulation.rollout.model_client import ModelClient
+from market_simulation.conf import C
+
+# Create a client to interact with the model server
+client = ModelClient(
+    model_name=C.model_serving.model_name,
+    ip=C.model_serving.ip,
+    port=C.model_serving.port,
+)
+
+# Get predictions from the model
+predictions = client.get_prediction(your_input_data)
+```
+
+**Note:** Running the Ray server requires significant computational resources, especially if you're using GPU acceleration. Make sure your system meets the hardware requirements specified in the "Compute Infrastructure" section.
+
+#### Testing the Ray Server
+
+Once the Ray server is running, you can test it using the provided test functions:
+
+1. **Interactive Demo**:
+
+   ```bash
+   # Run the Streamlit demo
+   streamlit run market_simulation/examples/demo/home_app.py
+   ```
+
+   This will launch a web interface where you can:
+   - View Stylized Facts Report
+   - Generate Market Forecasts
+   - Analyze Market Impact
+
+   The Interactive Demo provides an intuitive way to interact with the model through a user-friendly interface, making it ideal for quick exploration and visualization of the model's capabilities.
+
+3. **Run a Market Forecast Simulation**:
+
+   ```bash
+   # Run the forecast script
+   python -m market_simulation.examples.forecast
+   ```
+
+   This script performs a more comprehensive test of the Ray server by:
+   - Creating a market simulation environment with multiple agents
+   - Using the ModelClient to communicate with the Ray server for order generation
+   - Running multiple simulation rollouts with different random seeds
+   - Visualizing the resulting price trajectories and saving them as images
+
+   The script will:
+   - Initialize a noise agent to establish initial market conditions
+   - Use a background agent that relies on the Ray server for order generation
+   - Run multiple simulations in parallel (if not in debug mode)
+   - Save the simulation results to compressed files
+   - Generate visualizations of the price trajectories
+
+   The output will be saved in the `output/forecasting-example` directory, with files named `rollouts-seed{seed}-run{run}.zstd` for the simulation data and `rollouts-seed{seed}-run{run}.png` for the visualizations.
+
+   This approach offers more flexibility and control over the simulation parameters, allowing for more advanced testing and analysis of the model's performance.
+
+**Prerequisites for Testing:**
+- The Ray server must be running and accessible at the configured IP and port
+- Validation samples must be available in the expected location
+- The model should be configured with minimal temperature for deterministic outputs
 
 ## Model Details
 
@@ -215,10 +250,10 @@ The model uses a LLaMA-based transformer architecture with:
   title={MarS: a Financial Market Simulation Engine Powered by Generative Foundation Model},
   author={Li, Junjie and Liu, Yang and Liu, Weiqing and Fang, Shikai and Wang, Lewen and Xu, Chang and Bian, Jiang},
   journal={arXiv preprint arXiv:2409.07486},
+  url={https://arxiv.org/abs/2409.07486},
   year={2024}
 }
 ```
-
 ## Model Card Contact
 
 For questions and feedback about this model, please contact:

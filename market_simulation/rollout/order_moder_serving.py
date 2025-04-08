@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import logging
 import pickle
-from pathlib import Path
-from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -11,10 +9,7 @@ import torch
 from ray import serve
 
 from market_simulation.conf import C
-from market_simulation.utils import pkl_utils
-
-if TYPE_CHECKING:
-    from market_simulation.models.order_model import OrderModel
+from market_simulation.models.order_model import OrderModel
 
 
 @serve.deployment(
@@ -30,10 +25,9 @@ class OrderModelServing:
         logging.info(f"Order model initialized, with temperature: {self.temperature}.")
 
     def _load_model(self) -> OrderModel:
-        model_path: Path = Path(C.directory.input_root_dir) / C.model_serving.model_path
-        assert model_path.is_file(), f"model file not existed: {model_path}"
-        order_model: OrderModel = pkl_utils.load_pkl_zstd(model_path)
-        logging.info(f"Loaded model from {model_path}.")
+        repo_id = C.model_serving.repo_id
+        order_model = OrderModel.from_pretrained(C.model_serving.repo_id, token=C.model_serving.hf_token)
+        logging.info(f"Loaded model from {repo_id}.")
         logging.info(f"Model configs: {order_model.num_layers}, {order_model.emb_dim}, {order_model.num_heads}")
         return order_model
 
