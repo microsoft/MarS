@@ -40,6 +40,7 @@
         "--device=/dev/fuse",
         "--security-opt=apparmor:unconfined",
         "--shm-size=20gb",
-        "--gpus=all"
+        "--gpus=all",
+        "--privileged"
     ]
 }
