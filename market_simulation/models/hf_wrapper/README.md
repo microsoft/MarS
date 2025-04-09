@@ -30,10 +30,32 @@ The model is available on Hugging Face Hub. You can download and load it using:
 from market_simulation.models.order_model import OrderModel
 from market_simulation.conf import C
 # Load model directly from Hugging Face Hub
-model = OrderModel.from_pretrained(
-    C.model_serving.repo_id,
-    token="<your_hf_token>"
+model = OrderModel.from_pretrained(C.model_serving.repo_id)
+```
+
+### Download and Configure Converters
+
+The model requires converters to function properly. These converters are used to convert various market data (e.g., price, volume, intervals) into appropriate formats. The converters are available in the same Hugging Face repository as the model:
+
+```python
+from pathlib import Path
+from huggingface_hub import snapshot_download
+from market_simulation.conf import C
+
+# Download the converters directory from the model repository
+snapshot_download(
+    repo_id=C.model_serving.repo_id,
+    local_dir=C.directory.input_root_dir,
+    allow_patterns=["converters/*"],
 )
+
+# These converter files will be automatically loaded from the default path when needed
+# See `market_simulation/states/order_state.py` for details about the converters
+
+# Initialize the converter if you need to use it in your own code
+from market_simulation.states.order_state import Converter
+converter_dir = Path(C.directory.input_root_dir) / C.order_model.converter_dir
+converter = Converter(converter_dir=converter_dir)
 ```
 
 ### Starting the Order Model Ray Server
@@ -85,13 +107,12 @@ Once the Ray server is running, you can test it using the provided test function
    ```
 
    This will launch a web interface where you can:
-   - View Stylized Facts Report
    - Generate Market Forecasts
    - Analyze Market Impact
 
    The Interactive Demo provides an intuitive way to interact with the model through a user-friendly interface, making it ideal for quick exploration and visualization of the model's capabilities.
 
-3. **Run a Market Forecast Simulation**:
+2. **Run a Market Forecast Simulation**:
 
    ```bash
    # Run the forecast script
@@ -119,6 +140,26 @@ Once the Ray server is running, you can test it using the provided test function
 - The Ray server must be running and accessible at the configured IP and port
 - Validation samples must be available in the expected location
 - The model should be configured with minimal temperature for deterministic outputs
+
+### Run Stylized Facts Analysis
+
+To run the stylized facts analysis, you need to download the stylized facts data file:
+
+```python
+from pathlib import Path
+from huggingface_hub import snapshot_download
+from market_simulation.conf import C
+
+# Download the stylized facts file from the model repository
+snapshot_download(
+    repo_id=C.model_serving.repo_id,
+    local_dir=C.directory.input_root_dir,
+    allow_patterns=["stylized-facts/*"],
+)
+
+# Run the stylized facts analysis script
+python market_simulation/examples/report_stylized_facts.py
+```
 
 ## Model Details
 
