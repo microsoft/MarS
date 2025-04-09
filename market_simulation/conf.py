@@ -8,8 +8,7 @@ class ModelServing(BaseModel):
     """Config for model serving."""
 
     model_path: str = "order-model/order-time-mid-LOB-24-1024-16.zstd"
-    repo_id: str = "Don-Don/mars-order-model"
-    hf_token: str = ""  # NOTE: Please set your own token here
+    repo_id: str = "microsoft/mars-order-model"
     model_name: str = "order-model"
     temperature: float = 1.0
     ip: str = "localhost"

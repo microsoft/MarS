@@ -26,7 +26,7 @@ class OrderModelServing:
 
     def _load_model(self) -> OrderModel:
         repo_id = C.model_serving.repo_id
-        order_model = OrderModel.from_pretrained(C.model_serving.repo_id, token=C.model_serving.hf_token)
+        order_model = OrderModel.from_pretrained(C.model_serving.repo_id)
         logging.info(f"Loaded model from {repo_id}.")
         logging.info(f"Model configs: {order_model.num_layers}, {order_model.emb_dim}, {order_model.num_heads}")
         return order_model
