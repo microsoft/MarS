@@ -15,8 +15,8 @@ A cutting-edge financial market simulation engine powered by the Large Market Mo
 ### Installation
 
 ```bash
-git clone https://github.com/microsoft/MarS-Model-Release.git
-cd MarS-Model-Release
+git clone https://github.com/microsoft/MarS.git
+cd MarS
 pip install -e .[dev]
 ```
 ### Download and Configure Converters
