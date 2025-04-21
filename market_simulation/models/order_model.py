@@ -4,7 +4,7 @@ from __future__ import annotations
 import torch
 from huggingface_hub import PyTorchModelHubMixin
 from torch import Tensor, nn
-from transformers import LlamaConfig, LlamaForCausalLM
+from transformers import LlamaConfig, LlamaForCausalLM  # type: ignore
 
 
 class OrderTokenizer(nn.Module, PyTorchModelHubMixin):
@@ -43,6 +43,7 @@ class OrderTokenizer(nn.Module, PyTorchModelHubMixin):
     def forward(self, features: Tensor) -> Tensor:
         """Tokenize inputs."""
         batch_size = features.size(0)
+        dtype = next(self.parameters()).dtype
         assert features.size(1) == self.num_max_orders * self.dim_order
         features = features.reshape((batch_size, self.num_max_orders, self.dim_order))
         features = features.reshape((batch_size * self.num_max_orders, self.dim_order))
@@ -59,7 +60,7 @@ class OrderTokenizer(nn.Module, PyTorchModelHubMixin):
             self.emb_order_interval(order_interval),
             self.emb_chg_to_open(features[:, 3].clip(min=-self.max_chg_slots, max=self.max_chg_slots) + self.max_chg_slots),
             self.emb_time_to_open(features[:, 4] // 5),
-            self.lob_tokenizer(features[:, 5:15].float()),
+            self.lob_tokenizer(features[:, 5:15].to(dtype)),
         ]
 
         tokens = torch.sum(torch.stack(embs), dim=0)
@@ -145,7 +146,7 @@ class OrderModel(nn.Module, PyTorchModelHubMixin):
     def forward(self, features: Tensor) -> Tensor:
         """Forward pass."""
         tokens = self.tokenize(features)
-        out = self.decoder(inputs_embeds=tokens, use_cache=False)
+        out = self.decoder(inputs_embeds=tokens, use_cache=False)  # type: ignore
         logits = out.logits
         return logits
 
