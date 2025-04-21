@@ -15,12 +15,27 @@ A cutting-edge financial market simulation engine powered by the Large Market Mo
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/microsoft/MarS-Model-Release.git
 cd MarS-Model-Release
-# Install dependencies
 pip install -e .[dev]
 ```
+### Download and Configure Converters
+
+The model requires converters to function properly. These converters are used to convert various market data (e.g., price, volume, intervals) into appropriate formats. The converters are available in the same Hugging Face repository as the model:
+
+```python
+from huggingface_hub import snapshot_download
+from market_simulation.conf import C
+
+snapshot_download(
+    repo_id=C.model_serving.repo_id,
+    local_dir=C.directory.input_root_dir,
+    allow_patterns=["converters/*"],
+)
+```
+> These converter files will be automatically loaded from the default path when needed.
+See `market_simulation/states/order_state.py` for details about the converters
+
 
 ### Download and Load Model
 
@@ -29,136 +44,63 @@ The model is available on Hugging Face Hub. You can download and load it using:
 ```python
 from market_simulation.models.order_model import OrderModel
 from market_simulation.conf import C
-# Load model directly from Hugging Face Hub
 model = OrderModel.from_pretrained(C.model_serving.repo_id)
 ```
 
-### Download and Configure Converters
-
-The model requires converters to function properly. These converters are used to convert various market data (e.g., price, volume, intervals) into appropriate formats. The converters are available in the same Hugging Face repository as the model:
-
-```python
-from pathlib import Path
-from huggingface_hub import snapshot_download
-from market_simulation.conf import C
-
-# Download the converters directory from the model repository
-snapshot_download(
-    repo_id=C.model_serving.repo_id,
-    local_dir=C.directory.input_root_dir,
-    allow_patterns=["converters/*"],
-)
-
-# These converter files will be automatically loaded from the default path when needed
-# See `market_simulation/states/order_state.py` for details about the converters
-
-# Initialize the converter if you need to use it in your own code
-from market_simulation.states.order_state import Converter
-converter_dir = Path(C.directory.input_root_dir) / C.order_model.converter_dir
-converter = Converter(converter_dir=converter_dir)
-```
 
 ### Starting the Order Model Ray Server
 
-MarS uses [Ray Serve](https://docs.ray.io/en/latest/serve/index.html) to deploy the order model as a scalable, production-ready service. Ray Serve is a scalable model serving framework built on Ray that makes it easy to deploy ML models in production.
-
+MarS uses [Ray Serve](https://docs.ray.io/en/latest/serve/index.html) to deploy the order model as a scalable, production-ready service.
 To start the order model Ray server:
 
 ```bash
-# Run the start script
 bash scripts/start-order-model.sh
 ```
 
-This script will:
+> **Prerequisites:**
+> - The Ray server must be running and accessible at the configured IP and port
+> - Sufficient computational resources are required to run the model
 
-1. Stop any existing Ray cluster
-2. Start a new Ray cluster with a head node
-3. Deploy the order model service using the configuration in `ray_serving.yaml`
-4. Display the status of the deployed service
+To explore all of our demos in a user-friendly interface:
 
-Once the server is running, you can use the `ModelClient` to interact with it:
+```bash
+streamlit run market_simulation/examples/demo/home_app.py
+```
+
+The demo applications are designed to provide a quick and visual understanding of each tool's capabilities. However, there are some important considerations:
+
+> **Using Demos vs Scripts**:
+> - If you want to quickly understand what these tools can do, run the Streamlit demos for an interactive experience.
+> - If you need to use these tools with your own data or in production, you'll need to modify the corresponding scripts (`report_stylized_facts.py`, `forecast.py`, `market_impact.py`) directly.
+
+### Direct Model Interaction
+
+If you want to interact with the model directly after starting the server, you can use the `ModelClient`.
 
 ```python
 from market_simulation.rollout.model_client import ModelClient
 from market_simulation.conf import C
 
-# Create a client to interact with the model server
 client = ModelClient(
     model_name=C.model_serving.model_name,
     ip=C.model_serving.ip,
     port=C.model_serving.port,
 )
 
-# Get predictions from the model
 predictions = client.get_prediction(your_input_data)
 ```
 
-**Note:** Running the Ray server requires significant computational resources, especially if you're using GPU acceleration. Make sure your system meets the hardware requirements specified in the "Compute Infrastructure" section.
-
-#### Testing the Ray Server
-
-Once the Ray server is running, you can test it using the provided test functions:
-
-1. **Interactive Demo**:
-
-   ```bash
-   # Run the Streamlit demo
-   streamlit run market_simulation/examples/demo/home_app.py
-   ```
-
-   This will launch a web interface where you can:
-   - Generate Market Forecasts
-   - Analyze Market Impact
-
-   The Interactive Demo provides an intuitive way to interact with the model through a user-friendly interface, making it ideal for quick exploration and visualization of the model's capabilities.
-
-2. **Run a Market Forecast Simulation**:
-
-   ```bash
-   # Run the forecast script
-   python -m market_simulation.examples.forecast
-   ```
-
-   This script performs a more comprehensive test of the Ray server by:
-   - Creating a market simulation environment with multiple agents
-   - Using the ModelClient to communicate with the Ray server for order generation
-   - Running multiple simulation rollouts with different random seeds
-   - Visualizing the resulting price trajectories and saving them as images
-
-   The script will:
-   - Initialize a noise agent to establish initial market conditions
-   - Use a background agent that relies on the Ray server for order generation
-   - Run multiple simulations in parallel (if not in debug mode)
-   - Save the simulation results to compressed files
-   - Generate visualizations of the price trajectories
-
-   The output will be saved in the `output/forecasting-example` directory, with files named `rollouts-seed{seed}-run{run}.zstd` for the simulation data and `rollouts-seed{seed}-run{run}.png` for the visualizations.
-
-   This approach offers more flexibility and control over the simulation parameters, allowing for more advanced testing and analysis of the model's performance.
-
-**Prerequisites for Testing:**
-- The Ray server must be running and accessible at the configured IP and port
-- Validation samples must be available in the expected location
-- The model should be configured with minimal temperature for deterministic outputs
-
-### Run Stylized Facts Analysis
-
-To run the stylized facts analysis, you need to download the stylized facts data file:
+We also provide validation data on for testing purposes. You can download this data by running the following code:
 
 ```python
-from pathlib import Path
 from huggingface_hub import snapshot_download
 from market_simulation.conf import C
 
-# Download the stylized facts file from the model repository
 snapshot_download(
     repo_id=C.model_serving.repo_id,
     local_dir=C.directory.input_root_dir,
-    allow_patterns=["stylized-facts/*"],
+    allow_patterns=["validation-samples/*"],
 )
-
-# Run the stylized facts analysis script
-python market_simulation/examples/report_stylized_facts.py
 ```
 
 ## Model Details

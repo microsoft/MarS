@@ -27,7 +27,7 @@
 
 ## 📦 Release Overview
 
-We are proud to release our MarS order model, available at [HuggingFace/MarS](https://huggingface.co/microsoft), along with three powerful analytical tools that demonstrate the capabilities of our market simulation engine:
+We are proud to release our MarS order model, available at [microsoft/mars-order-model](https://huggingface.co/microsoft/mars-order-model) in Hugging Face Hub, along with three powerful analytical tools that demonstrate the capabilities of our market simulation engine:
 
 1. **📊 Stylized Facts Report**: Evaluates 11 key market characteristics
 2. **📈 Market Forecast**: Predicts future market prices and trends
@@ -35,7 +35,56 @@ We are proud to release our MarS order model, available at [HuggingFace/MarS](ht
 
 For each tool, we provide an interactive demo to help you understand its capabilities and potential applications. Please refer to our [paper](https://arxiv.org/abs/2409.07486) for detailed methodology and technical approaches.
 
-### 🖥️ Usage & Notes
+## 🖥️ Usage & Notes
+
+### Install Dependencies
+
+```bash
+pip install -e .[dev]
+```
+
+### Download and Configure Converters
+
+The model requires converters to function properly. These converters are used to convert various market data (e.g., price, volume, intervals) into appropriate formats. The converters are available in the same Hugging Face repository as the model:
+
+```python
+from huggingface_hub import snapshot_download
+from market_simulation.conf import C
+
+snapshot_download(
+    repo_id=C.model_serving.repo_id,
+    local_dir=C.directory.input_root_dir,
+    allow_patterns=["converters/*"],
+)
+```
+> These converter files will be automatically loaded from the default path when needed.
+See `market_simulation/states/order_state.py` for details about the converters
+
+
+### Download and Load Model
+
+The model is available on Hugging Face Hub. You can download and load it using:
+
+```python
+from market_simulation.models.order_model import OrderModel
+from market_simulation.conf import C
+
+model = OrderModel.from_pretrained(C.model_serving.repo_id)
+```
+
+
+### Starting the Order Model Ray Server
+
+MarS uses [Ray Serve](https://docs.ray.io/en/latest/serve/index.html) to deploy the order model as a scalable, production-ready service.
+To start the order model Ray server:
+
+```bash
+bash scripts/start-order-model.sh
+```
+
+> **Prerequisites:**
+> - The Ray server must be running and accessible at the configured IP and port
+> - Sufficient computational resources are required to run the model
 
 To explore all of our demos in a user-friendly interface:
 
@@ -49,9 +98,38 @@ The demo applications are designed to provide a quick and visual understanding o
 > - If you want to quickly understand what these tools can do, run the Streamlit demos for an interactive experience.
 > - If you need to use these tools with your own data or in production, you'll need to modify the corresponding scripts (`report_stylized_facts.py`, `forecast.py`, `market_impact.py`) directly.
 
+### Direct Model Interaction
+
+If you want to interact with the model directly after starting the server, you can use the `ModelClient`.
+
+```python
+from market_simulation.rollout.model_client import ModelClient
+from market_simulation.conf import C
+
+client = ModelClient(
+    model_name=C.model_serving.model_name,
+    ip=C.model_serving.ip,
+    port=C.model_serving.port,
+)
+
+predictions = client.get_prediction(your_input_data)
+```
+
+We also provide validation data on for testing purposes. You can download this data by running the following code:
+
+```python
+from huggingface_hub import snapshot_download
+from market_simulation.conf import C
+
+snapshot_download(
+    repo_id=C.model_serving.repo_id,
+    local_dir=C.directory.input_root_dir,
+    allow_patterns=["validation-samples/*"],
+)
+```
+
 #### 🔧Production Deployment Prerequisites
 
-For production deployment of these tools, several important requirements must be met:
 
 - **Real Order-Level Data**: While our demos use noise agents to generate initial states, production-grade applications require complete order-level historical data to accurately simulate market behavior.
 
@@ -78,6 +156,24 @@ The demos provide a user-friendly interface to experiment with different paramet
 ### 📊 Stylized Facts Report
 
 The Stylized Facts Report evaluates 11 key market characteristics identified by [Cont (2001)](http://rama.cont.perso.math.cnrs.fr/pdf/empirical.pdf) to assess the realism of market simulations. These characteristics, known as "stylized facts," are empirical patterns consistently observed across different financial markets, instruments, and time periods.
+
+#### Usage:
+
+To run the stylized facts analysis, you need to download the stylized facts data file:
+
+```python
+from huggingface_hub import snapshot_download
+from market_simulation.conf import C
+
+snapshot_download(
+    repo_id=C.model_serving.repo_id,
+    local_dir=C.directory.input_root_dir,
+    allow_patterns=["stylized-facts/*"],
+)
+
+# Run the stylized facts analysis script
+python market_simulation/examples/report_stylized_facts.py
+```
 
 #### Stylized Facts Table:
 
