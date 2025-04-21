@@ -7,7 +7,7 @@ ENV_NESTED_DELIMITER = "__"
 class ModelServing(BaseModel):
     """Config for model serving."""
 
-    model_path: str = "order-model/order-time-mid-LOB-24-1024-16.zstd"
+    model_path: str = "2025-04-21/order-time-mid-LOB-24-1024-16.zstd"
     repo_id: str = "microsoft/mars-order-model"
     model_name: str = "order-model"
     temperature: float = 1.0
@@ -36,36 +36,13 @@ class OrderModel(BaseModel):
 
     seq_len: int = 1024
     token_dim: int = 15
-    converter_dir: str = "converters-zz1800-500-2024-03-18"
-
-
-class TradingModelConfig(BaseModel):
-    """Config for trading model."""
-
-    model_path: str = "trading-models/model.ckpt"
-    updating_model_dir: str = "trading-models/updating_model"
-    experience_dir: str = "trading-models/experience"
-    log_dir: str = "trading-models/log"
-    model_name: str = "trading-model"
-    input_dim: int = 26
-    output_dim: int = 17
-    hidden_dim: int = 128
-    num_batches_to_sync_model: int = 100
-    target_volume_ratio: float = 0.5
-    num_updating_models: int = 5
-    lr: float = 1e-3
-    num_rollouts: int = 4
-    batch_size: int = 256
-    buffer_size: int = 1024
-    entropy_weight: float = 0.01
-    good_completion_ratio: float = 0.95
-    base_twap_passive_volume_ratio: float = 0.1
+    converter_dir: str = "converters"
 
 
 class DebugConfig(BaseModel):
     """Config for debug."""
 
-    enable: bool = False
+    enable: bool = True
 
 
 class Conf(BaseSettings):
@@ -74,7 +51,6 @@ class Conf(BaseSettings):
     debug: DebugConfig = DebugConfig()
     model_serving: ModelServing = ModelServing()
     order_model: OrderModel = OrderModel()
-    trading_model: TradingModelConfig = TradingModelConfig()
     directory: Directory = Directory()
 
     class Config:
