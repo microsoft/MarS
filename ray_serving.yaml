@@ -26,7 +26,7 @@ applications:
 
     route_prefix: /order-model
 
-    import_path: market_simulation.rollout.order_moder_serving:order_model_app
+    import_path: market_simulation.rollout.order_model_serving:order_model_app
 
     runtime_env: {}
 
