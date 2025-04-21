@@ -203,6 +203,10 @@ def upload_to_hf(
     # Load or create model
     model = _load_or_create_model(model_path)
 
+    # Convert model to FP16
+    model.half()
+    logging.info("Converted model to FP16 precision.")
+
     # Push the model
     model.push_to_hub(
         repo_id=repo_id,
@@ -238,7 +242,7 @@ def main() -> None:
         repo_id=repo_id,
         token=token,
         private=True,  # Set to False for public repository
-        commit_message="Initial Mixin Model, Converters, and Stylized Facts",
+        commit_message="init commit",
     )
 
 
