@@ -37,41 +37,49 @@ For each tool, we provide an interactive demo to help you understand its capabil
 
 ## 🖥️ Usage & Notes
 
-### Install Dependencies
+### Installation Options
 
+#### Option 1: Using VS Code Dev Containers (Recommended)
+
+We provide a fully configured development environment using VS Code Dev Containers:
+
+```bash
+git clone https://github.com/microsoft/MarS.git
+cd MarS
+```
+
+Then, with VS Code and the Dev Containers extension installed:
+1. Open the project folder in VS Code
+2. **Important**: Before reopening in container, modify the `.devcontainer/devcontainer.json` file to change `"source=/data/"` to `<your/data/path>` exists on your host machine
+3. When prompted, click "Reopen in Container" or use the command palette (F1) and select "Dev Containers: Reopen in Container"
+4. The container will build with all dependencies and extensions configured
+5. Once inside the container, install the project dependencies:
 ```bash
 pip install -e .[dev]
 ```
 
-### Download and Configure Converters
+#### Option 2: Using Docker Directly
 
-The model requires converters to function properly. These converters are used to convert various market data (e.g., price, volume, intervals) into appropriate formats. The converters are available in the same Hugging Face repository as the model:
-
-```python
-from huggingface_hub import snapshot_download
-from market_simulation.conf import C
-
-snapshot_download(
-    repo_id=C.model_serving.repo_id,
-    local_dir=C.directory.input_root_dir,
-    allow_patterns=["converters/*"],
-)
-```
-> These converter files will be automatically loaded from the default path when needed.
-See `market_simulation/states/order_state.py` for details about the converters
-
-
-### Download and Load Model
-
-The model is available on Hugging Face Hub. You can download and load it using:
-
-```python
-from market_simulation.models.order_model import OrderModel
-from market_simulation.conf import C
-
-model = OrderModel.from_pretrained(C.model_serving.repo_id)
+```bash
+git clone https://github.com/microsoft/MarS.git
+cd MarS
+docker build -t mars-env -f .devcontainer/Dockerfile .
+# Modify this path to match your data directory
+docker run -it --cap-add=SYS_ADMIN --device=/dev/fuse --security-opt=apparmor:unconfined --shm-size=20gb --gpus=all --privileged -v <your/data/path>:/data -v $(pwd):/workspaces/MarS -w /workspaces/MarS mars-env
+# Inside the container
+pip install -e .[dev]
 ```
 
+> **Important**: We strongly recommend using docker to run MarS. Direct installation without Docker is not supported due to specific system dependencies and CUDA requirements.
+
+### Download Model and Pre-requisites
+
+We've simplified downloading all necessary components (model, converters, validation samples, and stylized facts data) using a single script:
+
+```python
+python download.py
+```
+> Note: The download requires sufficient disk space and may take some time depending on your internet connection.
 
 ### Starting the Order Model Ray Server
 
@@ -115,18 +123,7 @@ client = ModelClient(
 predictions = client.get_prediction(your_input_data)
 ```
 
-We also provide validation data on for testing purposes. You can download this data by running the following code:
 
-```python
-from huggingface_hub import snapshot_download
-from market_simulation.conf import C
-
-snapshot_download(
-    repo_id=C.model_serving.repo_id,
-    local_dir=C.directory.input_root_dir,
-    allow_patterns=["validation-samples/*"],
-)
-```
 
 #### 🔧Production Deployment Prerequisites
 
@@ -159,19 +156,10 @@ The Stylized Facts Report evaluates 11 key market characteristics identified by 
 
 #### Usage:
 
-To run the stylized facts analysis, you need to download the stylized facts data file:
+To run the stylized facts analysis:
 
-```python
-from huggingface_hub import snapshot_download
-from market_simulation.conf import C
-
-snapshot_download(
-    repo_id=C.model_serving.repo_id,
-    local_dir=C.directory.input_root_dir,
-    allow_patterns=["stylized-facts/*"],
-)
-
-# Run the stylized facts analysis script
+```bash
+# Ensure you've run the download.py script first to get the required data
 python market_simulation/examples/report_stylized_facts.py
 ```
 
@@ -226,13 +214,6 @@ python market_simulation/examples/report_stylized_facts.py
    - Correlation between coarse returns (absolute sum) and fine returns (sum of absolutes)
 
 Our methodology rigorously tests these facts using 11,591 simulated trajectories for the top 500 liquid stocks in the Chinese market, comparing simulation outputs against historical data.
-
-
-#### Usage:
-
-```bash
-python market_simulation/examples/report_stylized_facts.py
-```
 
 ### 📈 Market Forecast
 
@@ -351,13 +332,7 @@ We are excited to release the MarS simulation engine along with examples demonst
 The release of the pretrained model is currently undergoing internal review. We will make the model public once it passes the review. We look forward to sharing more features, examples, and applications in the future. Stay tuned for updates!
 
 
-## 💻 Installation
 
-The code is tested with Python 3.8 & 3.9. Run the following command to install the necessary dependencies:
-
-```bash
-pip install -e .[dev]
-```
 
 ## 📊 Market Simulatin Library
 

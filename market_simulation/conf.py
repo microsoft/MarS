@@ -7,7 +7,6 @@ ENV_NESTED_DELIMITER = "__"
 class ModelServing(BaseModel):
     """Config for model serving."""
 
-    model_path: str = "2025-04-21/order-time-mid-LOB-24-1024-16.zstd"
     repo_id: str = "microsoft/mars-order-model"
     model_name: str = "order-model"
     temperature: float = 1.0
