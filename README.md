@@ -144,7 +144,7 @@ Several strategies can substantially improve inference performance for productio
 
 - **Model Compression**: Implement quantization, distillation, and pruning to reduce model size and computational requirements while maintaining accuracy.
 
-- **KV-Cache Optimization**: Our current implementation uses fixed-length sequences with sliding windows, making KV-cache implementation not applicable. Implementing KV-cache could improve inference speed by 5-10x based on our preliminary experiments.
+- **KV-Cache Optimization**: Our current implementation uses fixed-length sequences with sliding windows, which needs special design for KV-cache.
 
 - **Multi-Token Prediction**: Generating multiple tokens simultaneously instead of one-by-one order generation could substantially reduce inference time.
 
