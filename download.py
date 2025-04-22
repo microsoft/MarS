@@ -7,7 +7,7 @@ from market_simulation.models.order_model import OrderModel
 
 
 def cache_and_download() -> None:
-    """Download model and converters."""
+    """Download model and pre-requisites."""
     # cache model
     model = OrderModel.from_pretrained(C.model_serving.repo_id)
     logging.info(f"Model loaded from {C.model_serving.repo_id}.")
