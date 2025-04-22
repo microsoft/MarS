@@ -447,6 +447,29 @@ def display_forecast_app() -> None:  # noqa: PLR0915
             color: #58a6ff;
             background-color: #21262d;
         }
+
+        [data-theme="light"] input[type="number"],
+        [data-theme="light"] .stNumberInput input {
+            color: #000000 !important;
+        }
+
+        [data-theme="light"] .stNumberInput div[data-baseweb="input"],
+        [data-theme="light"] .stDateInput div[data-baseweb="input"],
+        [data-theme="light"] input[type="time"] {
+            background-color: #ffffff !important;
+            border-color: #cccccc !important;
+        }
+
+        input[type="number"],
+        .stNumberInput input {
+            color: #000000 !important;
+            background-color: #ffffff !important;
+        }
+
+        .stNumberInput div[data-baseweb="input"] {
+            background-color: #ffffff !important;
+            border-color: #cccccc !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -565,9 +588,9 @@ def display_forecast_app() -> None:  # noqa: PLR0915
 
         st.subheader("Simulation Settings")
 
-        num_rollouts = st.number_input("Number of Rollouts", min_value=1, max_value=10, value=2)
+        num_rollouts = st.number_input("Number of Rollouts", min_value=2, value=8)
 
-        seed = st.number_input("Random Seed", min_value=0, max_value=100, value=0)
+        seed = st.number_input("Random Seed", min_value=0, value=0)
 
         run_simulation_button = st.button(
             "Run Simulation",
@@ -633,9 +656,6 @@ def display_forecast_app() -> None:  # noqa: PLR0915
 
             current_progress += stages["Preparing environment"]
             progress_bar.progress(current_progress)
-
-            original_debug_state = C.debug.enable
-            C.debug.enable = True
 
             output_dir = Path(C.directory.output_root_dir) / "forecasting-example"
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -752,14 +772,9 @@ def display_forecast_app() -> None:  # noqa: PLR0915
             progress_placeholder.empty()
             status_placeholder.success("Simulation complete!")
 
-            C.debug.enable = original_debug_state
-
         except Exception as e:
-            C.debug.enable = original_debug_state
             progress_placeholder.empty()
             status_placeholder.error(f"An error occurred during simulation: {e}")
-        else:
-            C.debug.enable = original_debug_state
 
 
 if __name__ == "__main__":

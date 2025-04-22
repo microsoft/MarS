@@ -759,6 +759,35 @@ def display_market_impact_app() -> None:  # noqa: PLR0915
             height: 30px;
             fill: white;
         }
+        .stApp {
+            background-color: #0d1117;
+            color: #f0f6fc;
+        }
+        /* Similar styles as in home_app.py */
+
+        [data-theme="light"] input[type="number"],
+        [data-theme="light"] .stNumberInput input {
+            color: #000000 !important;
+        }
+
+        [data-theme="light"] .stNumberInput div[data-baseweb="input"],
+        [data-theme="light"] .stDateInput div[data-baseweb="input"],
+        [data-theme="light"] input[type="time"] {
+            background-color: #ffffff !important;
+            border-color: #cccccc !important;
+        }
+
+        /* Make all number inputs black text on white background regardless of theme */
+        input[type="number"],
+        .stNumberInput input {
+            color: #000000 !important;
+            background-color: #ffffff !important;
+        }
+
+        .stNumberInput div[data-baseweb="input"] {
+            background-color: #ffffff !important;
+            border-color: #cccccc !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -856,8 +885,8 @@ def display_market_impact_app() -> None:  # noqa: PLR0915
         st.info(f"Simulation ends at: {end_datetime.strftime('%H:%M')}")
 
         st.subheader("Simulation Settings")
-        num_rollouts = st.number_input("Number of Rollouts", min_value=1, max_value=10, value=2)
-        seed = st.number_input("Random Seed", min_value=0, max_value=100, value=0)
+        num_rollouts = st.number_input("Number of Rollouts", min_value=2, value=8)
+        seed = st.number_input("Random Seed", min_value=0, value=0)
         volume_ratio = st.slider("Volume Ratio", min_value=0.1, max_value=1.0, value=0.3, step=0.1)
 
         run_simulation_button = st.button("Run Simulation", type="primary")
@@ -921,9 +950,6 @@ def display_market_impact_app() -> None:  # noqa: PLR0915
 
             current_progress += stages["Preparing environment"]
             progress_bar.progress(current_progress)
-
-            original_debug_state = C.debug.enable
-            C.debug.enable = True
 
             output_dir = Path(C.directory.output_root_dir) / "market-impact-example"
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -1066,15 +1092,10 @@ def display_market_impact_app() -> None:  # noqa: PLR0915
             progress_placeholder.empty()
             status_placeholder.success("Simulation complete!")
 
-            C.debug.enable = original_debug_state
-
         except Exception as e:
-            C.debug.enable = original_debug_state
             progress_placeholder.empty()
             status_placeholder.error(f"An error occurred during simulation: {e!s}")
             st.exception(e)
-        else:
-            C.debug.enable = original_debug_state
 
 
 if __name__ == "__main__":

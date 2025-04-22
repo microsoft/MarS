@@ -29,6 +29,9 @@ class OrderModelServing:
         order_model = OrderModel.from_pretrained(C.model_serving.repo_id)
         logging.info(f"Loaded model from {repo_id}.")
         logging.info(f"Model configs: {order_model.num_layers}, {order_model.emb_dim}, {order_model.num_heads}")
+        if C.model_serving.fp16:
+            order_model.half()
+            logging.info("Model converted to half precision.")
         return order_model
 
     @serve.batch(max_batch_size=C.model_serving.max_batch_size)  # type: ignore
