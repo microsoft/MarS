@@ -119,6 +119,7 @@ def _upload_converters(
 
 def _upload_stylized_facts(
     api: HfApi,
+    stylized_facts_dir: Path,
     repo_id: str,
     token: str,
     commit_message: str,
@@ -127,17 +128,18 @@ def _upload_stylized_facts(
 
     Args:
         api: Hugging Face API client
+        stylized_facts_dir: Path to the stylized facts directory
         repo_id: Hugging Face repository ID
         token: Hugging Face API token
         commit_message: Commit message for the upload
     """
-    stylized_facts_path = Path(C.directory.input_root_dir) / "stylized-facts/rollout_info_25_minutes.zstd"
+    stylized_facts_path = stylized_facts_dir / "rollout_info_25_minutes.zstd"
     if stylized_facts_path.exists():
         with stylized_facts_path.open("rb") as f:
             stylized_facts_content = f.read()
         api.upload_file(
             path_or_fileobj=stylized_facts_content,
-            path_in_repo="stylized-facts/rollout_info_25_minutes.zstd",
+            path_in_repo=f"stylized-facts/{stylized_facts_path.name}",
             repo_id=repo_id,
             token=token,
             revision="main",
@@ -181,8 +183,8 @@ def _upload_readme(
 
 def _upload_validation_files(
     api: HfApi,
-    validation_data_path: Path | None,
-    validation_output_path: Path | None,
+    validation_data_path: Path,
+    validation_output_path: Path,
     repo_id: str,
     token: str,
     commit_message: str,
@@ -198,54 +200,49 @@ def _upload_validation_files(
         commit_message: Commit message for the upload
     """
     # Upload validation data file
-    if validation_data_path and validation_data_path.exists():
-        with validation_data_path.open("rb") as f:
-            data_content = f.read()
-        api.upload_file(
-            path_or_fileobj=data_content,
-            path_in_repo=f"validation_data/{validation_data_path.name}",
-            repo_id=repo_id,
-            token=token,
-            revision="main",
-            commit_message=commit_message,
-        )
-        logging.info(f"Uploaded validation data file {validation_data_path.name} to hub")
-    elif validation_data_path:
-        logging.warning(f"Validation data file {validation_data_path} not found, skipping upload")
-
+    with validation_data_path.open("rb") as f:
+        data_content = f.read()
+    api.upload_file(
+        path_or_fileobj=data_content,
+        path_in_repo=f"validation-samples/{validation_data_path.name}",
+        repo_id=repo_id,
+        token=token,
+        revision="main",
+        commit_message=commit_message,
+    )
+    logging.info(f"Uploaded validation data file {validation_data_path.name} to hub")
     # Upload validation output file
-    if validation_output_path and validation_output_path.exists():
-        with validation_output_path.open("rb") as f:
-            output_content = f.read()
-        api.upload_file(
-            path_or_fileobj=output_content,
-            path_in_repo=f"validation-samples/{validation_output_path.name}",
-            repo_id=repo_id,
-            token=token,
-            revision="main",
-            commit_message=commit_message,
-        )
-        logging.info(f"Uploaded validation output file {validation_output_path.name} to hub")
-    elif validation_output_path:
-        logging.warning(f"Validation output file {validation_output_path} not found, skipping upload")
+    with validation_output_path.open("rb") as f:
+        output_content = f.read()
+    api.upload_file(
+        path_or_fileobj=output_content,
+        path_in_repo=f"validation-samples/{validation_output_path.name}",
+        repo_id=repo_id,
+        token=token,
+        revision="main",
+        commit_message=commit_message,
+    )
+    logging.info(f"Uploaded validation output file {validation_output_path.name} to hub")
 
 
 def upload_to_hf(
-    model_path: Path | None,
-    converter_dir: Path | None,
+    model_path: Path,
+    converter_dir: Path,
+    stylized_facts_dir: Path,
     repo_id: str,
     token: str,
     *,
-    validation_data_path: Path | None = None,
-    validation_output_path: Path | None = None,
+    validation_data_path: Path,
+    validation_output_path: Path,
     private: bool = False,
     commit_message: str = "Upload model and converters",
 ) -> None:
     """Upload model, converters, and optional validation files to Hugging Face Hub.
 
     Args:
-        model_path: Path to the model file. If None, a randomly initialized model will be used.
-        converter_dir: Path to the converter directory. If None, converters will not be uploaded.
+        model_path: Path to the model file.
+        converter_dir: Path to the converter directory.
+        stylized_facts_dir: Path to the stylized facts directory.
         repo_id: Hugging Face repository ID (e.g., 'microsoft/mars-order-model')
         token: Hugging Face API token
         validation_data_path: Optional path to the validation data file (.zstd).
@@ -272,7 +269,7 @@ def upload_to_hf(
     _upload_converters(api, converter_dir, repo_id, token, commit_message)
 
     # Upload stylized facts file
-    _upload_stylized_facts(api, repo_id, token, commit_message)
+    _upload_stylized_facts(api, stylized_facts_dir, repo_id, token, commit_message)
 
     # Upload README.md
     _upload_readme(api, repo_id, token, commit_message)
@@ -286,23 +283,27 @@ def upload_to_hf(
 def main() -> None:
     """Main function."""
     # Example usage
-    model_path = Path(C.directory.input_root_dir) / C.model_serving.model_path
-    converter_dir = Path(C.directory.input_root_dir) / C.order_model.converter_dir
-
+    model_path_str: str = "2025-04-21/order-time-mid-LOB-24-1024-16.zstd"
+    converter_dir_str: str = "converters-zz1800-500-2024-03-18"
+    stylized_facts_dir_str: str = "stylized-facts"
+    model_path = Path(C.directory.input_root_dir) / model_path_str
+    converter_dir = Path(C.directory.input_root_dir) / converter_dir_str
+    stylized_facts_dir = Path(C.directory.input_root_dir) / stylized_facts_dir_str
     # Define paths for the validation files
     validation_data_path = Path(C.directory.input_root_dir) / "2025-04-21/valid-00-00000000-0-32.zstd"
     validation_output_path = Path(C.directory.input_root_dir) / "2025-04-21/valid-00-00000000-0-32.output.csv"
 
-    repo_id = input("Please enter your Hugging Face repository ID: ").strip()  # Change this to your desired repository ID
-    token = input("Please enter your Hugging Face token: ").strip()  # Get token from user input
+    repo_id = input("Please enter your Hugging Face repository ID: ").strip()
+    token = input("Please enter your Hugging Face token: ").strip()
 
     upload_to_hf(
         model_path=model_path,
         converter_dir=converter_dir,
-        repo_id=repo_id,
-        token=token,
+        stylized_facts_dir=stylized_facts_dir,
         validation_data_path=validation_data_path,
         validation_output_path=validation_output_path,
+        repo_id=repo_id,
+        token=token,
         private=True,  # Set to False for public repository
         commit_message="init commit",
     )
