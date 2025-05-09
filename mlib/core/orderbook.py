@@ -1,5 +1,4 @@
 # pyright: strict
-from typing import Dict, List, Set
 
 import pandas as pd
 from pandas import Timestamp
@@ -15,18 +14,20 @@ class Orderbook:
     """Orderbook class."""
 
     def __init__(self, symbol: str) -> None:
-        self.bids: List[Level] = []
-        self.asks: List[Level] = []
-        self.call_auction_orders: List[LimitOrder] = []
+        self.bids: list[Level] = []
+        self.asks: list[Level] = []
+        self.call_auction_orders: list[LimitOrder] = []
         self.time: pd.Timestamp
         self.last_price = -1
         self.symbol = symbol
 
-    def add_call_auction_order(self, order: LimitOrder):
+    def add_call_auction_order(self, order: LimitOrder) -> None:
+        """Add call auction order."""
         self.time = order.time
         self.call_auction_orders.append(order)
 
-    def match_call_auction_orders(self, time: Timestamp, type: str):
+    def match_call_auction_orders(self, time: Timestamp, type: str) -> tuple[list[Transaction], Transaction | None]:
+        """Match call auction orders."""
         assert type in ["OPEN", "CLOSE"]
         self.time = time
         cancel_transactions = self._del_canceled_call_auction_orders()
@@ -35,7 +36,7 @@ class Orderbook:
             self.update_last_price(match_transaction)
         return cancel_transactions, match_transaction
 
-    def update(self, order: LimitOrder):
+    def update(self, order: LimitOrder) -> TradeInfo:
         """Update orderbook with continuous auction order."""
         assert not self.call_auction_orders
         self.time = order.time
@@ -45,11 +46,13 @@ class Orderbook:
         trade_info = TradeInfo(order, trans, self.snapshot())
         return trade_info
 
-    def update_last_price(self, transaction: Transaction):
-        if transaction.type == "B" or transaction.type == "S":
+    def update_last_price(self, transaction: Transaction) -> None:
+        """Update last transation price."""
+        if transaction.type in ["B", "S"]:
             self.last_price = transaction.price
 
-    def snapshot(self, level: int = 10):
+    def snapshot(self, level: int = 10) -> LobSnapshot:
+        """Get latest LOB snapsthot."""
         asks = self.asks[:level]
         bids = self.bids[:level]
         snapshot = LobSnapshot(
@@ -63,19 +66,21 @@ class Orderbook:
         )
         return snapshot
 
-    def get_best_k_ask_bid(self, k: int = 5):
+    def get_best_k_ask_bid(self, k: int = 5) -> tuple[int, int]:
+        """Get best kth ask and bid price."""
         ask_k = -1
         bid_k = -1
         if len(self.asks) >= k:
-            ask_prices: List[int] = [x.price for x in self.asks]
+            ask_prices: list[int] = [x.price for x in self.asks]
             ask_k = ask_prices[k - 1]
         if len(self.bids) >= k:
-            bid_prices: List[int] = [x.price for x in self.bids]
+            bid_prices: list[int] = [x.price for x in self.bids]
             bid_k = bid_prices[k - 1]
         return ask_k, bid_k
 
-    def get_price_of_order_id(self, order_id: int):
-        levels: List[Level] = []
+    def get_price_of_order_id(self, order_id: int) -> int:
+        """Get price of order id."""
+        levels: list[Level] = []
         levels.extend(self.asks)
         levels.extend(self.bids)
 
@@ -89,13 +94,13 @@ class Orderbook:
 
         raise RuntimeError(f"order id {order_id} not existed in orderbook/call_auction_orders.")
 
-    def _clear_call_auction_order(self):
+    def _clear_call_auction_order(self) -> None:
         for order in self.call_auction_orders:
             trans = self._update_with_normal_order(order)
             assert not trans
         self.call_auction_orders.clear()
 
-    def _macth_call_auction_orders(self, time: Timestamp, type: str):
+    def _macth_call_auction_orders(self, time: Timestamp, type: str) -> Transaction | None:
         auction_orders = self.call_auction_orders
         # extend
         for level in self.asks:
@@ -104,8 +109,8 @@ class Orderbook:
             auction_orders.extend(level.orders)
         # sort
         auction_orders.sort(key=lambda x: x.order_id)
-        sell_levels: Dict[int, Level] = {}
-        buy_levels: Dict[int, Level] = {}
+        sell_levels: dict[int, Level] = {}
+        buy_levels: dict[int, Level] = {}
         self.asks = []
         self.bids = []
 
@@ -135,17 +140,17 @@ class Orderbook:
 
     def _match_auction_orders_and_update_orderbook(
         self,
-        auction_orders: List[LimitOrder],
+        auction_orders: list[LimitOrder],
         max_vol_price: int,
         max_vol_equal_price_sell_vol: int,
         max_vol_equal_price_buy_vol: int,
         time: Timestamp,
         type: str,
-    ):
-        bid_ids: List[int] = []
-        ask_ids: List[int] = []
+    ) -> Transaction:
+        bid_ids: list[int] = []
+        ask_ids: list[int] = []
         total_volume = 0
-        order_matched_volume: Dict[int, int] = {}
+        order_matched_volume: dict[int, int] = {}
         for order in auction_orders:
             if order.is_buy and order.price > max_vol_price:
                 bid_ids.append(order.order_id)
@@ -191,7 +196,7 @@ class Orderbook:
         )
         return transaction
 
-    def _find_matched_index(self, price: int, levels: List[Level]):
+    def _find_matched_index(self, price: int, levels: list[Level]) -> int:
         index = -1
         for i, level in enumerate(levels):
             if level.price == price:
@@ -199,25 +204,26 @@ class Orderbook:
                 break
         return index
 
-    def _clear_levels(self, level_indexes: List[int], levels: List[Level]):
+    def _clear_levels(self, level_indexes: list[int], levels: list[Level]) -> None:
         for index in reversed(level_indexes):
             levels.pop(index)
 
-    def _add_to_level(self, order: LimitOrder, levels: List[Level], ascending: bool):
+    def _add_to_level(self, order: LimitOrder, levels: list[Level], *, ascending: bool) -> None:
         assert order.volume > 0
         for i, level in enumerate(levels):
             if order.price == level.price:
                 level.add_new_order(order)
                 return
-            if ascending and level.price > order.price or not ascending and level.price < order.price:
+            if (ascending and level.price > order.price) or (not ascending and level.price < order.price):
                 levels.insert(i, Level(order.price, order.volume, [order]))
                 return
         levels.append(Level(order.price, order.volume, [order]))
 
-    def _update_with_normal_order(self, order: LimitOrder):
+    def _update_with_normal_order(self, order: LimitOrder) -> list[Transaction]:  # noqa: PLR0915
+        """Update orderbook with normal order."""
         assert order.volume > 0
         assert order.price >= 0
-        transactions: List[Transaction] = []
+        transactions: list[Transaction] = []
         if order.is_cancel_buy:
             index = self._find_matched_index(order.price, self.bids)
             assert index >= 0
@@ -227,7 +233,7 @@ class Orderbook:
             if self.bids[index].volume == 0:
                 self.bids.pop(index)
             return transactions
-        elif order.is_cancel_sell:
+        if order.is_cancel_sell:
             index = self._find_matched_index(order.price, self.asks)
             assert index >= 0
             assert order.price != 0
@@ -236,9 +242,9 @@ class Orderbook:
             if self.asks[index].volume == 0:
                 self.asks.pop(index)
             return transactions
-        elif order.is_buy:
+        if order.is_buy:
             levels = self.asks
-            empty_levels: List[int] = []
+            empty_levels: list[int] = []
             for index_level, level in enumerate(levels):
                 if level.price <= order.price:
                     if level.volume > 0:
@@ -269,7 +275,6 @@ class Orderbook:
             self._clear_levels(empty_levels, levels)
             if order.volume > 0:
                 self._add_to_level(order, self.bids, ascending=False)
-
         else:
             assert order.is_sell
             levels = self.bids
@@ -306,16 +311,16 @@ class Orderbook:
                 self._add_to_level(order, self.asks, ascending=True)
         return transactions
 
-    def _del_canceled_call_auction_orders(self):
+    def _del_canceled_call_auction_orders(self) -> list[Transaction]:
         num_cancel = 0
         orders = self.call_auction_orders
-        transactions: List[Transaction] = []
+        transactions: list[Transaction] = []
         for i in range(len(orders)):
             order = orders[i]
             if not order.is_cancel:
                 continue
             num_cancel += 1
-            pre_indexes = [i for i in range(0, i) if orders[i].order_id == order.cancel_id]
+            pre_indexes = [i for i in range(i) if orders[i].order_id == order.cancel_id]
             assert len(pre_indexes) == 1
             pre_index = pre_indexes[0]
             pre_order = orders[pre_index]
@@ -338,8 +343,10 @@ class Orderbook:
         return transactions
 
 
-def _update_levels(auction_orders: List[LimitOrder], sell_levels: Dict[int, Level], buy_levels: Dict[int, Level]):
-    prices: Set[int] = set()
+def _update_levels(
+    auction_orders: list[LimitOrder], sell_levels: dict[int, Level], buy_levels: dict[int, Level]
+) -> tuple[dict[int, Level], dict[int, Level], set[int]]:
+    prices: set[int] = set()
     for level in sell_levels.values():
         prices.add(level.price)
 
@@ -362,10 +369,10 @@ def _update_levels(auction_orders: List[LimitOrder], sell_levels: Dict[int, Leve
 
 
 def _get_call_auction_final_price(
-    sell_levels: Dict[int, Level],
-    buy_levels: Dict[int, Level],
-    prices: Set[int],
-):
+    sell_levels: dict[int, Level],
+    buy_levels: dict[int, Level],
+    prices: set[int],
+) -> tuple[int, int, int, int]:
     max_vol = 0
     max_vol_price = -1
     max_vol_equal_price_sell_vol = -1
@@ -397,11 +404,7 @@ def _get_call_auction_final_price(
             max_vol_equal_price_buy_vol = total_vol - buy_vol
             assert 0 <= max_vol_equal_price_sell_vol <= equal_price_sell_vol
             assert 0 <= max_vol_equal_price_buy_vol <= equal_price_buy_vol
-            assert (
-                max_vol_equal_price_buy_vol - equal_price_buy_vol == 0
-                or max_vol_equal_price_sell_vol - equal_price_sell_vol == 0
-            )
-            # logging.info(f'found new max vol: {max_vol}, price: {max_vol_price}, equal_sell_vol: {max_vol_equal_price_sell_vol}, equal_buy_vol: {max_vol_equal_price_buy_vol}')
+            assert max_vol_equal_price_buy_vol - equal_price_buy_vol == 0 or max_vol_equal_price_sell_vol - equal_price_sell_vol == 0
     return (
         max_vol,
         max_vol_price,

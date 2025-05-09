@@ -1,5 +1,4 @@
-# pyright: strict
-from typing import List
+import logging
 
 from pandas import Timestamp
 
@@ -14,7 +13,8 @@ from mlib.core.exchange import Exchange
 from mlib.core.exchange_config import create_Chinese_stock_exchange_config
 
 
-def test_create_exchange_events():
+def test_create_exchange_events() -> None:
+    """Test create exchange events."""
     date = Timestamp("2020-01-01")
     symbols = ["000001"]
     config = create_Chinese_stock_exchange_config(date, symbols=symbols)
@@ -22,10 +22,10 @@ def test_create_exchange_events():
     engine = Engine(Exchange(config), verbose=True)
     for event in events:
         engine.push_event(event)
-    print("start to handle events")
-    pop_events: List[Event] = []
+    logging.info("start to handle events")
+    pop_events: list[Event] = []
     while engine.has_event():
-        event = engine._pop_event()  # type: ignore
+        event = engine._pop_event()  # type: ignore  # noqa: SLF001
         if pop_events:
             assert pop_events[-1].time <= event.time
         pop_events.append(event)

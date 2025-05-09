@@ -1,5 +1,5 @@
 # pyright: strict
-from typing import Dict, List, NamedTuple, Optional
+from typing import NamedTuple
 
 from pandas import Timestamp
 
@@ -7,14 +7,16 @@ TRANSACTION_TYPES = ["B", "S", "C", "OPEN", "CLOSE"]
 
 
 class Transaction(NamedTuple):
+    """Transaction class to represent a transaction in the market."""
+
     time: Timestamp
     symbol: str
     type: str
     price: int
     volume: int
-    buy_id: List[int]
-    sell_id: List[int]
-    order_matched_volume: Optional[Dict[int, int]] = None
+    buy_id: list[int]
+    sell_id: list[int]
+    order_matched_volume: dict[int, int] | None = None
 
     def __str__(self) -> str:
         assert self.type in TRANSACTION_TYPES
@@ -32,10 +34,12 @@ class Transaction(NamedTuple):
         bid_ids = "\n\t".join([str(x) for x in bid_id_list])
         ask_ids = "\n\t".join([str(x) for x in ask_id_list])
         price_str = "0" if self.type == "C" else str(self.price)
-        result = f"time {self.time}, symbol: {self.symbol}, type {self.type}, price {price_str}, vol {self.volume}, bid_ids {bid_ids}, ask_ids {ask_ids}"
+        result = (
+            f"time {self.time}, symbol: {self.symbol}, type {self.type}, price {price_str}, vol {self.volume}, bid_ids {bid_ids}, ask_ids {ask_ids}"
+        )
         if self.order_matched_volume is not None:
             keys = sorted(self.order_matched_volume.keys())
             values = [self.order_matched_volume[key] for key in keys]
-            volume_info = ", ".join([f"order volume: {key}: {value}, " for key, value in zip(keys, values)])
+            volume_info = ", ".join([f"order volume: {key}: {value}, " for key, value in zip(keys, values, strict=True)])
             result += volume_info
         return result

@@ -3,8 +3,6 @@
         ".env": "shellscript"
     },
     "python.languageServer": "Pylance",
-    "python.analysis.stubPath": "build/typings",
-    "python.analysis.typeCheckingMode": "basic",
     "editor.formatOnSave": true,
     "editor.formatOnPaste": false,
     "files.eol": "\n",
@@ -12,23 +10,23 @@
     "files.trimFinalNewlines": true,
     "files.trimTrailingWhitespace": true,
     "python.defaultInterpreterPath": "/opt/conda/bin/python",
-    "cmake.configureOnOpen": false,
-    "git.postCommitCommand": "push",
+    "mypy.enabled": true,
+    "mypy.targets": [
+        "./market_simulation",
+        "./mlib",
+    ],
+    "mypy.configFile": "./pyproject.toml",
     "terminal.integrated.cursorStyle": "underline",
     "[python]": {
         "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+            "source.fixAll": "explicit",
+        },
         "editor.defaultFormatter": "charliermarsh.ruff"
     },
-    "isort.args": [
-        "--profile",
-        "black"
-    ],
-    "ruff.lint.run": "onSave",
-    "ruff.format.args": [
-        "args: [--config=pyproject.toml]"
-    ],
     "ruff.lint.args": [
         "args: [--config=pyproject.toml]",
         "--unsafe-fixes", // Aggressive fixes.
-    ],
+    ]
 }

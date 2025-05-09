@@ -1,0 +1,46 @@
+{
+    "name": "cuda124-py12",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-toolsai.jupyter",
+                "ms-toolsai.jupyter-renderers",
+                "ms-toolsai.jupyter-keymap",
+                "yzhang.markdown-all-in-one",
+                "redhat.vscode-yaml",
+                "christian-kohler.path-intellisense",
+                "mhutchie.git-graph",
+                "timonwong.shellcheck",
+                "emilast.LogFileHighlighter",
+                "DavidAnson.vscode-markdownlint",
+                "GrapeCity.gc-excelviewer",
+                "ZainChen.json",
+                "charliermarsh.ruff",
+                "joshbolduc.commitlint",
+                "donjayamanne.githistory",
+                "eamodio.gitlens",
+                "mechatroner.rainbow-csv",
+                "github.vscode-github-actions",
+                "tomoki1207.pdf",
+                "matangover.mypy"
+            ]
+        }
+    },
+    "mounts": [
+        "source=/data/,target=/data,type=bind,consistency=cached"
+    ],
+    "containerEnv": {},
+    "runArgs": [
+        "--cap-add=SYS_ADMIN",
+        "--device=/dev/fuse",
+        "--security-opt=apparmor:unconfined",
+        "--shm-size=20gb",
+        "--gpus=all",
+        "--privileged"
+    ]
+}

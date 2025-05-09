@@ -7,6 +7,8 @@ if TYPE_CHECKING:
 
 
 class Observation(NamedTuple):
+    """Observation for the agent."""
+
     time: Timestamp
     agent: "BaseAgent"
     is_market_open_wakup: bool

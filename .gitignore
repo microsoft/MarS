@@ -161,4 +161,4 @@ tags
 .mypy_cache
 mlruns
 logs/
-.devcontainer
+.cursor/

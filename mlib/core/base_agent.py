@@ -1,8 +1,7 @@
 # pyright: strict
 import logging
 import sys
-from random import shuffle
-from typing import Dict, List, Optional, Tuple
+from random import Random, shuffle
 
 from pandas import Timedelta, Timestamp
 
@@ -36,16 +35,29 @@ class BaseAgent:
         computation_delay: int = 0,
     ) -> None:
         self.agent_id: int = -1
-        self.symbol_states: Dict[str, Dict[str, State]] = {}
-        self.lob_orders: Dict[str, Dict[int, LimitOrder]] = {}  # symbol -> order_id -> order
-        self.lob_price_orders: Dict[str, Dict[int, Dict[int, LimitOrder]]] = {}  # symbol -> price -> order_id -> order
-        self.holdings: Dict[str, int] = {}
+        self.symbol_states: dict[str, dict[str, State]] = {}
+        self.lob_orders: dict[str, dict[int, LimitOrder]] = {}  # symbol -> order_id -> order
+        self.lob_price_orders: dict[str, dict[int, dict[int, LimitOrder]]] = {}  # symbol -> price -> order_id -> order
+        self.holdings: dict[str, int] = {}
         self.cash: float = init_cash
-        self.tradable_holdings: Dict[str, int] = {}
+        self.tradable_holdings: dict[str, int] = {}
         self.tradable_cash: float = init_cash
         self.communication_delay = Timedelta(communication_delay, unit="second")
         self.computation_delay = Timedelta(computation_delay, unit="second")
         self.states_update_time = Timestamp("2000-01-01")
+
+    def init_base_info(self, other: "BaseAgent") -> None:
+        """Copy base information from other agent."""
+        self.symbol_states = other.symbol_states
+        self.lob_orders = other.lob_orders
+        self.lob_price_orders = other.lob_price_orders
+        self.holdings = other.holdings
+        self.cash = other.cash
+        self.tradable_holdings = other.tradable_holdings
+        self.tradable_cash = other.tradable_cash
+        self.communication_delay = other.communication_delay
+        self.computation_delay = other.computation_delay
+        self.states_update_time = other.states_update_time
 
     def get_action(self, observation: Observation) -> Action:
         """Get action given observation.
@@ -59,7 +71,7 @@ class BaseAgent:
         assert self.agent_id == observation.agent.agent_id
         time = observation.time
         # return empty order for the market open wakeup
-        orders: List[BaseOrder] = [] if observation.is_market_open_wakup else self.get_orders(time)
+        orders: list[BaseOrder] = [] if observation.is_market_open_wakup else self.get_orders(time)
         action = Action(
             agent_id=self.agent_id,
             time=time,
@@ -68,45 +80,50 @@ class BaseAgent:
         )
         return action
 
-    def get_orders(self, time: Timestamp) -> List[BaseOrder]:
+    def get_orders(self, time: Timestamp) -> list[BaseOrder]:
         """Generate orders based on current known states, e.g., `self.symbol_states`, `self.holdings`, `self.cash`, etc."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
-    def get_next_wakeup_time(self, time: Timestamp) -> Optional[Timestamp]:
+    def get_next_wakeup_time(self, time: Timestamp) -> Timestamp | None:
         """Provide the next wakeup time."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
-    def on_market_open(self, time: Timestamp, symbols: List[str]) -> None:
+    def on_market_open(self, time: Timestamp, symbols: list[str]) -> None:
+        """Initialize the agent when the market opens."""
         self._init_holdings(symbols)
 
     def on_market_close(self, time: Timestamp) -> None:
+        """Finalize the agent when the market closes."""
         pass
 
-    def _init_holdings(self, symbols: List[str]):
+    def _init_holdings(self, symbols: list[str]) -> None:
         for symbol in symbols:
             self.lob_orders[symbol] = {}
             self.lob_price_orders[symbol] = {}
             self.holdings[symbol] = 0
             self.tradable_holdings[symbol] = 0
 
-    def on_order_accepted(self, time: Timestamp, orders: List[LimitOrder]) -> None:
+    def on_order_accepted(self, time: Timestamp, orders: list[LimitOrder]) -> None:
+        """Update the agent with accepted orders."""
         for order in orders:
             self._add_accepted_order(order)
 
-    def on_order_rejected(self, time: Timestamp, base_orders: List[BaseOrder]):
+    def on_order_rejected(self, time: Timestamp, base_orders: list[BaseOrder]) -> None:
+        """Update the agent with rejected orders."""
         for base_order in base_orders:
             logging.info(f"order rejected: {base_order}: this is an invalid cancel order.")
 
-    def on_order_ignored(self, time: Timestamp, base_orders: List[BaseOrder]):
+    def on_order_ignored(self, time: Timestamp, base_orders: list[BaseOrder]) -> None:
+        """Update the agent with ignored orders."""
         for base_order in base_orders:
             logging.info(f"order ignore: {base_order}, invalid time: {base_order.time}")
 
-    def on_states_update(self, time: Timestamp, symbol_states: Dict[str, Dict[str, State]]):
+    def on_states_update(self, time: Timestamp, symbol_states: dict[str, dict[str, State]]) -> None:
         """Before agent wakeup, this function will be called automatically by the env to update agent with the latest available states."""
         self.symbol_states = symbol_states
         self.states_update_time = time
 
-    def _add_accepted_order(self, order: LimitOrder):
+    def _add_accepted_order(self, order: LimitOrder) -> None:
         if order.is_cancel:
             return
         symbol = order.symbol
@@ -121,8 +138,9 @@ class BaseAgent:
         if order.is_buy:
             self.tradable_cash -= order.volume * order.price
 
-    def on_order_executed(self, time: Timestamp, transaction: Transaction, trans_order_id_to_notify: int):
-        del_order_ids: List[Tuple[str, int]] = []
+    def on_order_executed(self, time: Timestamp, transaction: Transaction, trans_order_id_to_notify: int) -> list[tuple[str, int]]:
+        """Update the agent with executed orders."""
+        del_order_ids: list[tuple[str, int]] = []
         assert transaction.volume > 0
         assert transaction.type in ["B", "S", "C", "OPEN", "CLOSE"]
         for buy_id in transaction.buy_id:
@@ -130,11 +148,7 @@ class BaseAgent:
                 continue
             assert buy_id in self.lob_orders[transaction.symbol]
             limit_order = self.lob_orders[transaction.symbol][buy_id]
-            trans_volume: int = (
-                transaction.volume
-                if transaction.order_matched_volume is None
-                else transaction.order_matched_volume[buy_id]
-            )
+            trans_volume: int = transaction.volume if transaction.order_matched_volume is None else transaction.order_matched_volume[buy_id]
             limit_order.decrease_volume(trans_volume)
             assert limit_order.volume >= 0
             if limit_order.volume == 0:
@@ -153,11 +167,7 @@ class BaseAgent:
                 continue
             assert sell_id in self.lob_orders[transaction.symbol]
             limit_order = self.lob_orders[transaction.symbol][sell_id]
-            trans_volume = (
-                transaction.volume
-                if transaction.order_matched_volume is None
-                else transaction.order_matched_volume[sell_id]
-            )
+            trans_volume = transaction.volume if transaction.order_matched_volume is None else transaction.order_matched_volume[sell_id]
             limit_order.decrease_volume(trans_volume)
             assert limit_order.volume >= 0
             if limit_order.volume == 0:
@@ -180,19 +190,19 @@ class BaseAgent:
         type: str,
         price: int,
         volume: int,
-    ) -> List[LimitOrder]:
+        random: Random | None = None,
+    ) -> list[LimitOrder]:
         """Construct valid orders.
 
-        Args
-        ----
+        Args:
             time (Timestamp): the time of orders.
             symbol (str): the symbol of orders.
             type (str): the order type, valid types are "B", "S" or "C".
             price (int): the order price.
             volume (int): the order volume.
+            random (Random | None): the random number generator, used for shuffling prices.
 
-        Returns
-        -------
+        Returns:
             List[LimitOrder]: limit orders that try to satisfy the `symbol`, `type`, `price`, and `volume`.
             - For buy and sell order, it returns a single order with `type`, `price` and `volume`.
             - For cancel order, it first finds a valid price that closest to `price`,
@@ -202,10 +212,10 @@ class BaseAgent:
         assert type in ["B", "S", "C"]
         if type in ["B", "S"]:
             return self._construct_buy_sell_order(time, symbol, type, price, volume)
-        else:
-            return self._construct_valid_cancel_orders(time, symbol, type, price, volume)
 
-    def _construct_buy_sell_order(self, time: Timestamp, symbol: str, type: str, price: int, volume: int):
+        return self._construct_valid_cancel_orders(time, symbol, type, price, volume, random=random)
+
+    def _construct_buy_sell_order(self, time: Timestamp, symbol: str, type: str, price: int, volume: int) -> list[LimitOrder]:
         """Construct buy or sell order based on type, price, volume."""
         order = LimitOrder(
             time=time,
@@ -221,9 +231,13 @@ class BaseAgent:
         )
         return [order]
 
-    def _get_closest_existing_price(self, pred_price: int, prices: List[int]):
+    def _get_closest_existing_price(self, pred_price: int, prices: list[int], random: Random | None = None) -> int:
+        """Get the closest existing price to the predicted price."""
         min_dis = sys.maxsize
-        shuffle(prices)
+        if random is None:
+            shuffle(prices)
+        else:
+            random.shuffle(prices)
         closest_price = -1
         for price in prices:
             dis = abs(price - pred_price)
@@ -235,18 +249,20 @@ class BaseAgent:
         assert closest_price > 0
         return closest_price
 
-    def _construct_valid_cancel_orders(self, time: Timestamp, symbol: str, type: str, price: int, volume: int):
+    def _construct_valid_cancel_orders(
+        self, time: Timestamp, symbol: str, type: str, price: int, volume: int, random: Random | None = None
+    ) -> list[LimitOrder]:
         """Construct valid cancel orders.
 
         The order id to cancel is based on agent's existing orders on orderbook.
         """
-        orders: List[LimitOrder] = []
+        orders: list[LimitOrder] = []
         price_orders = self.lob_price_orders[symbol]
         valid_prices = [key for key, value in price_orders.items() if value]
         if not valid_prices:
             return orders
 
-        price = self._get_closest_existing_price(pred_price=price, prices=valid_prices)
+        price = self._get_closest_existing_price(pred_price=price, prices=valid_prices, random=random)
         state = self.symbol_states[symbol][State.__name__]
         lob = state.lob_snapshot
         assert lob is not None
@@ -268,7 +284,7 @@ class BaseAgent:
             assert min_vol > 0
             left_volume -= min_vol
 
-            order = LimitOrder(
+            new_order = LimitOrder(
                 time=time,
                 type=type,
                 price=price,
@@ -280,6 +296,6 @@ class BaseAgent:
                 cancel_id=order.order_id,
                 tag="",
             )
-            orders.append(order)
+            orders.append(new_order)
         assert orders
         return orders

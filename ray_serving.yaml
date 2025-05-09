@@ -1,0 +1,38 @@
+proxy_location: EveryNode
+
+http_options:
+  host: 0.0.0.0
+
+  port: 8000
+
+grpc_options:
+  port: 9000
+
+  grpc_servicer_functions: []
+
+logging_config:
+  encoding: TEXT
+
+  log_level: INFO
+
+  logs_dir: null
+
+  enable_access_log: true
+
+  additional_log_standard_attrs: []
+
+applications:
+  - name: order-model
+
+    route_prefix: /order-model
+
+    import_path: market_simulation.rollout.order_model_serving:order_model_app
+
+    runtime_env: {}
+
+    deployments:
+      - name: OrderModelServing
+        num_replicas: 1
+        ray_actor_options:
+          num_cpus: 0.2
+          num_gpus: 0.3
