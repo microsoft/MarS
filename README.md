@@ -94,6 +94,9 @@ We've simplified downloading all necessary components (model, converters, valida
 ```python
 python download.py
 ```
+
+> **Important Note**: Since our model associated the hugging face repository is currently under review and not yet public, we have temporarily made the prerequisites available (converters, validation samples, and stylized facts data, not including the model) through OneDrive. Please download the prerequisites from [OneDrive](https://onedrive.live.com/?authkey=%21ANpke9j1atGGJQQ&id=32B7EA2716739542%21130&cid=32B7EA2716739542) and place them under your `input_root_dir` in `market_simulation/conf.py` instead of running the `download.py` script.
+
 > Note: The download requires sufficient disk space and may take some time depending on your internet connection.
 
 ### Starting the Order Model Ray Server
