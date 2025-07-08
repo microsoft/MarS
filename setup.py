@@ -19,7 +19,7 @@ setup(
         "torch==2.6.0",
         "torchvision==0.21.0",
         "torchaudio==2.6.0",
-        "transformers==4.50.0",
+        "transformers==4.52.1",
         "streamlit==1.40.1",
     ],
     extras_require={
