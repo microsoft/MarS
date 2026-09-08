@@ -25,10 +25,10 @@ jobs:
 
     steps:
       - name: Action checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2.3.4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -37,19 +37,19 @@ jobs:
           python -m pip install -e .[dev]
 
       - name: Run Ruff
-        uses: chartboost/ruff-action@v1
+        uses: chartboost/ruff-action@e18ae971ccee1b2d7bbef113930f00c670b78da4 # v1.0.0
 
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
 
       - name: Component detection
-        uses: advanced-security/component-detection-dependency-submission-action@v0.0.2
+        uses: advanced-security/component-detection-dependency-submission-action@5a8ce4ad8c6fbb9b88f66f672014e44b427d7d54 # v0.0.2
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@6f5948dfacef28e207b48d0905cf90c03365536d # v3.37.9
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@6f5948dfacef28e207b48d0905cf90c03365536d # v3.37.9
