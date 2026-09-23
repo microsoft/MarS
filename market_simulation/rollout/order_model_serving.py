@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import logging
-import pickle
 
 import numpy as np
 import numpy.typing as npt
 import torch
 from ray import serve
+from starlette.responses import Response
 
 from market_simulation.conf import C
 from market_simulation.models.order_model import OrderModel
+from market_simulation.rollout.wire_format import PayloadTooLarge, decode_int32, encode_int32, read_fixed_body
 
 
 @serve.deployment(
@@ -35,7 +36,7 @@ class OrderModelServing:
         return order_model
 
     @serve.batch(max_batch_size=C.model_serving.max_batch_size)  # type: ignore
-    async def batch_inference(self, requests: list[npt.NDArray[np.int32]]) -> list[npt.NDArray[np.int32]]:
+    async def batch_inference(self, requests: list[npt.NDArray[np.int32]]) -> list[bytes]:
         """Batch inference."""
         batch_size = len(requests)
         input_tensor = torch.from_numpy(np.asarray(requests)).cuda()
@@ -45,18 +46,27 @@ class OrderModelServing:
             output_tensor: np.ndarray = self.model.sample(input_tensor, self.temperature).int().cpu().reshape((batch_size, -1)).numpy()
         logging.info(f"output shape: {output_tensor.shape}")
 
-        results: list[npt.NDArray[np.int32]] = []
+        results: list[bytes] = []
         for i in range(batch_size):
             output = output_tensor[i]
-            arr = np.array([output], dtype=np.int32)
-            results.append(pickle.dumps(arr))  # type: ignore
+            results.append(encode_int32(output, 1))
         return results
 
-    async def __call__(self, request) -> list[npt.NDArray[np.int32]]:  # noqa: ANN001
+    async def __call__(self, request) -> Response:  # noqa: ANN001
         """Handle request."""
-        request_bytes = await request.body()
-        arr = pickle.loads(request_bytes)
-        return await self.batch_inference(arr)  # type: ignore
+        expected_elements = C.order_model.seq_len * C.order_model.token_dim
+        expected_bytes = expected_elements * np.dtype(np.int32).itemsize
+        if request.headers.get("content-type") != "application/octet-stream":
+            return Response("Expected application/octet-stream", status_code=415)
+        try:
+            request_bytes = await read_fixed_body(request.stream(), expected_bytes)
+            arr = decode_int32(request_bytes, expected_elements)
+        except PayloadTooLarge as error:
+            return Response(str(error), status_code=413)
+        except ValueError as error:
+            return Response(str(error), status_code=400)
+        result = await self.batch_inference(arr)  # type: ignore
+        return Response(result, media_type="application/octet-stream")
 
 
 order_model_app = OrderModelServing.bind()  # type: ignore

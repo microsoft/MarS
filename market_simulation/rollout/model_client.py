@@ -1,24 +1,27 @@
 from __future__ import annotations
 
 import logging
-import pickle
 from typing import TYPE_CHECKING
 
+import numpy as np
 import ray
 import requests
 
+from market_simulation.conf import C
+from market_simulation.rollout.wire_format import decode_int32, encode_int32
+
 if TYPE_CHECKING:
-    import numpy as np
     import numpy.typing as npt
 
 
 @ray.remote
 def send_query(url: str, state: npt.NDArray[np.int32]) -> npt.NDArray[np.int32]:
     """Send query to serving model."""
-    pdata = pickle.dumps(state)
-    response = requests.post(url, data=pdata)
-    output = pickle.loads(response.content)
-    return output
+    expected_elements = C.order_model.seq_len * C.order_model.token_dim
+    pdata = encode_int32(state, expected_elements)
+    response = requests.post(url, data=pdata, headers={"Content-Type": "application/octet-stream"})
+    response.raise_for_status()
+    return decode_int32(response.content, 1)
 
 
 class ModelClient:
