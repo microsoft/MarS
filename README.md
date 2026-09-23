@@ -133,6 +133,11 @@ To start the order model Ray server:
 bash scripts/start-order-model.sh
 ```
 
+The order-model HTTP endpoint listens on localhost by default. Expose it to
+remote clients only behind network access controls and authentication. The
+client and server must use the same version: requests and responses use a
+fixed-size little-endian int32 binary format.
+
 > **Prerequisites:**
 > - The Ray server must be running and accessible at the configured IP and port
 > - Sufficient computational resources are required to run the model
