@@ -10,7 +10,7 @@ from starlette.responses import Response
 
 from market_simulation.conf import C
 from market_simulation.models.order_model import OrderModel
-from market_simulation.rollout.wire_format import PayloadTooLarge, decode_int32, encode_int32, read_fixed_body
+from market_simulation.rollout.wire_format import PayloadTooLargeError, decode_int32, encode_int32, read_fixed_body
 
 
 @serve.deployment(
@@ -61,7 +61,7 @@ class OrderModelServing:
         try:
             request_bytes = await read_fixed_body(request.stream(), expected_bytes)
             arr = decode_int32(request_bytes, expected_elements)
-        except PayloadTooLarge as error:
+        except PayloadTooLargeError as error:
             return Response(str(error), status_code=413)
         except ValueError as error:
             return Response(str(error), status_code=400)

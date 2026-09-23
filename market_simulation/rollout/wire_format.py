@@ -8,7 +8,7 @@ import numpy.typing as npt
 WIRE_DTYPE = np.dtype("<i4")
 
 
-class PayloadTooLarge(ValueError):
+class PayloadTooLargeError(ValueError):
     """Raised when a streamed request exceeds the fixed wire size."""
 
 
@@ -17,7 +17,7 @@ async def read_fixed_body(chunks: AsyncIterable[bytes], expected_size: int) -> b
     body = bytearray()
     async for chunk in chunks:
         if len(body) + len(chunk) > expected_size:
-            raise PayloadTooLarge("Order-model request is too large")
+            raise PayloadTooLargeError("Order-model request is too large")
         body.extend(chunk)
     if len(body) != expected_size:
         raise ValueError("Invalid int32 payload length")

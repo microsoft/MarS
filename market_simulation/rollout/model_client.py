@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-import numpy as np
 import ray
 import requests
 
@@ -11,6 +10,7 @@ from market_simulation.conf import C
 from market_simulation.rollout.wire_format import decode_int32, encode_int32
 
 if TYPE_CHECKING:
+    import numpy as np
     import numpy.typing as npt
 
 
