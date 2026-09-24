@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="market_simulation",
-    version="0.0.1",
+    version="0.1.0",
     packages=find_packages(),
     description="An awesome package that does something",
     install_requires=[
