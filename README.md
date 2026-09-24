@@ -8,7 +8,7 @@
 <p align="center">
     <img src="https://img.shields.io/badge/build-pass-green" alt="build">
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT">
-    <img src="https://img.shields.io/badge/version-1.0.0-blue" alt="version">
+    <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="version">
     <img src="https://img.shields.io/badge/python-3.11%20|%203.12-blue" alt="python">
     <img src="https://img.shields.io/badge/platform-linux%20-lightgrey" alt="platform">
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome">
