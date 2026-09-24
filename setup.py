@@ -15,7 +15,7 @@ setup(
         "rich==13.9.4",
         "zstandard==0.23.0",
         "pydantic-settings==2.8.1",
-        "ray[serve]==2.44.0",
+        "ray[serve]==2.56.0",
         "torch==2.6.0",
         "torchvision==0.21.0",
         "torchaudio==2.6.0",
