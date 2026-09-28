@@ -11,7 +11,7 @@ setup(
         "ruamel.yaml==0.18.6",
         "scipy==1.15.2",
         "pydantic==2.10.3",
-        "python-dotenv==1.0.1",
+        "python-dotenv==1.2.2",
         "rich==13.9.4",
         "zstandard==0.23.0",
         "pydantic-settings==2.8.1",
